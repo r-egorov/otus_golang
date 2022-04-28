@@ -2,31 +2,32 @@ package rprint_test
 
 import (
 	"bytes"
-	"github.com/r-egorov/otus_golang/hw01_hello_otus/rprint"
 	"testing"
+
+	"github.com/r-egorov/otus_golang/hw01_hello_otus/rprint"
 )
 
 func TestRevPrint(t *testing.T) {
-	assertPrinted := func(t testing.TB, got, want string) {
-		t.Helper()
+	assertPrinted := func(tb testing.TB, got, want string) {
+		tb.Helper()
 		if got != want {
-			t.Errorf("got %q want %q", got, want)
+			tb.Errorf("got %q want %q", got, want)
 		}
 	}
 
-	assertNoError := func(t testing.TB, err error) {
-		t.Helper()
+	assertNoError := func(tb testing.TB, err error) {
+		tb.Helper()
 		if err != nil {
-			t.Errorf("got error %v", err)
+			tb.Errorf("got error %v", err)
 		}
 	}
 
-	getOutput := func(t testing.TB, message string) string {
-		t.Helper()
+	getOutput := func(tb testing.TB, message string) string {
+		tb.Helper()
 
 		out := &bytes.Buffer{}
 		err := rprint.RevPrint(out, message)
-		assertNoError(t, err)
+		assertNoError(tb, err)
 		return out.String()
 	}
 
@@ -41,7 +42,6 @@ func TestRevPrint(t *testing.T) {
 
 	for _, testcase := range cases {
 		t.Run(testcase.name, func(t *testing.T) {
-
 			got := getOutput(t, testcase.messageToPrint)
 			assertPrinted(t, got, testcase.want)
 		})
