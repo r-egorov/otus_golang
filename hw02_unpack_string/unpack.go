@@ -44,7 +44,7 @@ func Unpack(inputStr string) (string, error) {
 	var b strings.Builder
 
 	for pos := 0; pos < len(inputStr); {
-		substr, err := findSubstr(inputStr[pos:])
+		substr, err := findNextSubstr(inputStr[pos:])
 		if err != nil {
 			return "", err
 		}
@@ -55,12 +55,22 @@ func Unpack(inputStr string) (string, error) {
 	return b.String(), nil
 }
 
-func findSubstr(inputStr string) (string, error) {
+func findNextSubstr(inputStr string) (string, error) {
 	runes := []rune(inputStr)
+
+	if unicode.IsDigit(runes[0]) {
+		return "", ErrInvalidString
+	}
+
 	isSubstrOneChar := len(runes) < 2 || !unicode.IsDigit(runes[1])
+	isMultipleCyphersInSubstr := len(inputStr) > 2 && unicode.IsDigit(runes[2])
+
 	if isSubstrOneChar {
 		return inputStr[:1], nil
 	} else {
+		if isMultipleCyphersInSubstr {
+			return "", ErrInvalidString
+		}
 		return inputStr[:2], nil
 	}
 }

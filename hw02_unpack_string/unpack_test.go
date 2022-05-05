@@ -46,7 +46,7 @@ func TestUnpackInvalidString(t *testing.T) {
 	}
 }
 
-func TestFindSubstr(t *testing.T) {
+func TestFindNextSubstr(t *testing.T) {
 	cases := []struct {
 		inputStr, want string
 	}{
@@ -54,13 +54,30 @@ func TestFindSubstr(t *testing.T) {
 		{"b4c5", "b4"},
 		{"c5", "c5"},
 		{"s", "s"},
+		{"ab5cc3a", "a"},
 	}
 	for _, tc := range cases {
 		t.Run(
 			tc.inputStr, func(t *testing.T) {
-				got, err := findSubstr(tc.inputStr)
+				got, err := findNextSubstr(tc.inputStr)
 				require.NoError(t, err)
 				require.Equal(t, tc.want, got)
 			})
+	}
+}
+
+func TestFindNextSubstrInvalidString(t *testing.T) {
+	invalidStrings := []string{
+		"4",
+		"3a4",
+		"45cc3",
+		"a10b",
+		"a45",
+	}
+	for _, tc := range invalidStrings {
+		t.Run(tc, func(t *testing.T) {
+			_, err := findNextSubstr(tc)
+			require.Truef(t, errors.Is(err, ErrInvalidString), "actual error %q", err)
+		})
 	}
 }
