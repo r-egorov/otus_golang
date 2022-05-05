@@ -49,8 +49,7 @@ func Unpack(inputStr string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		unpackedSubstr := unpackSubstr(substr)
-		b.WriteString(unpackedSubstr)
+		b.WriteString(unpackSubstr(substr))
 		pos += len(substr)
 	}
 	return b.String(), nil

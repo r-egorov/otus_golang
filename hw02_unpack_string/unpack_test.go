@@ -8,7 +8,6 @@ import (
 )
 
 func TestUnpack(t *testing.T) {
-	t.Skip() // FIXME
 	tests := []struct {
 		input    string
 		expected string
@@ -35,7 +34,6 @@ func TestUnpack(t *testing.T) {
 }
 
 func TestUnpackInvalidString(t *testing.T) {
-	t.Skip() // FIXME
 	invalidStrings := []string{"3abc", "45", "aaa10b"}
 	for _, tc := range invalidStrings {
 		tc := tc
