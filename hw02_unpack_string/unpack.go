@@ -2,6 +2,7 @@ package hw02unpackstring
 
 import (
 	"errors"
+	"strconv"
 	"strings"
 	"unicode"
 )
@@ -76,5 +77,11 @@ func findNextSubstr(inputStr string) (string, error) {
 }
 
 func unpackSubstr(substr string) string {
-	return ""
+	runes := []rune(substr)
+	if len(runes) < 2 {
+		return substr
+	} else {
+		charCount, _ := strconv.Atoi(substr[1:]) // we checked that the second char is digit before
+		return strings.Repeat(substr[0:1], charCount)
+	}
 }

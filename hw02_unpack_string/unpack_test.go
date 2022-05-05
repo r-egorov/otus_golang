@@ -81,3 +81,20 @@ func TestFindNextSubstrInvalidString(t *testing.T) {
 		})
 	}
 }
+
+func TestUnpackSubstr(t *testing.T) {
+	cases := []struct {
+		inputStr, want string
+	}{
+		{"a3", "aaa"},
+		{"b", "b"},
+		{"c5", "ccccc"},
+	}
+	for _, tc := range cases {
+		t.Run(
+			tc.inputStr, func(t *testing.T) {
+				got := unpackSubstr(tc.inputStr)
+				require.Equal(t, tc.want, got)
+			})
+	}
+}
