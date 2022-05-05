@@ -7,24 +7,24 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestUnpack(t *testing.T) {
-	tests := []struct {
-		input    string
-		expected string
-	}{
-		{input: "a4bc2d5e", expected: "aaaabccddddde"},
-		{input: "d\n5abc", expected: "d\n\n\n\n\nabc"},
-		{input: "abccd", expected: "abccd"},
-		{input: "", expected: ""},
-		{input: "aaa0b", expected: "aab"},
-		// uncomment if task with asterisk completed
-		{input: `qwe\4\5`, expected: `qwe45`},
-		{input: `qwe\45`, expected: `qwe44444`},
-		{input: `qwe\\5`, expected: `qwe\\\\\`},
-		{input: `qwe\\\3`, expected: `qwe\3`},
-	}
+var testCasesValid = []struct {
+	input    string
+	expected string
+}{
+	{input: "a4bc2d5e", expected: "aaaabccddddde"},
+	{input: "d\n5abc", expected: "d\n\n\n\n\nabc"},
+	{input: "abccd", expected: "abccd"},
+	{input: "", expected: ""},
+	{input: "aaa0b", expected: "aab"},
+	// uncomment if task with asterisk completed
+	{input: `qwe\4\5`, expected: `qwe45`},
+	{input: `qwe\45`, expected: `qwe44444`},
+	{input: `qwe\\5`, expected: `qwe\\\\\`},
+	{input: `qwe\\\3`, expected: `qwe\3`},
+}
 
-	for _, tc := range tests {
+func TestUnpack(t *testing.T) {
+	for _, tc := range testCasesValid {
 		tc := tc
 		t.Run(tc.input, func(t *testing.T) {
 			result, err := Unpack(tc.input)
@@ -42,6 +42,16 @@ func TestUnpackInvalidString(t *testing.T) {
 			_, err := Unpack(tc)
 			require.Truef(t, errors.Is(err, ErrInvalidString), "actual error %q", err)
 		})
+	}
+}
+
+func BenchmarkUnpack(b *testing.B) {
+	for _, tc := range testCasesValid {
+		for i := 0; i < b.N; i++ {
+			if _, err := Unpack(tc.input); err != nil {
+				b.Fatalf("Error: %q", err)
+			}
+		}
 	}
 }
 
