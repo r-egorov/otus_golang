@@ -10,38 +10,6 @@ import (
 var ErrInvalidString = errors.New("invalid string")
 
 func Unpack(inputStr string) (string, error) {
-	//var b strings.Builder
-	//var char string
-	//var charCount int
-	//var err error
-	//
-	//char = ""
-	//charCount = 1
-	//for pos, r := range inputStr {
-	//	if char == "" {
-	//		if unicode.IsDigit(r) {
-	//			return "", ErrInvalidString
-	//		}
-	//		char = inputStr[pos : pos+1]
-	//	} else {
-	//		if unicode.IsDigit(r) {
-	//			charCount, err = strconv.Atoi(inputStr[pos : pos+1])
-	//			if err != nil {
-	//				return "", ErrInvalidString
-	//			}
-	//			b.WriteString(strings.Repeat(char, charCount))
-	//			char = ""
-	//		} else {
-	//			b.WriteString(char)
-	//			char = inputStr[pos : pos+1]
-	//		}
-	//	}
-	//}
-	//if char != "" {
-	//	b.WriteString(char)
-	//}
-	//return b.String(), nil
-
 	var b strings.Builder
 
 	for pos := 0; pos < len(inputStr); {
@@ -57,30 +25,43 @@ func Unpack(inputStr string) (string, error) {
 
 func findNextSubstr(inputStr string) (string, error) {
 	runes := []rune(inputStr)
+	screenOffset := 0
 
 	if unicode.IsDigit(runes[0]) {
 		return "", ErrInvalidString
 	}
 
-	isSubstrOneChar := len(runes) < 2 || !unicode.IsDigit(runes[1])
-	isMultipleCyphersInSubstr := len(inputStr) > 2 && unicode.IsDigit(runes[2])
+	if runes[0] == '\\' {
+		if len(runes) < 2 {
+			return "", ErrInvalidString
+		}
+		if !unicode.IsDigit(runes[1]) && runes[1] != '\\' {
+			return "", ErrInvalidString
+		}
+		screenOffset = 1
+	}
+
+	isSubstrOneChar := len(runes) < 2+screenOffset || !unicode.IsDigit(runes[1+screenOffset])
+	isMultipleCyphersInSubstr := len(runes) > 2+screenOffset && unicode.IsDigit(runes[2+screenOffset])
 
 	if isSubstrOneChar {
-		return inputStr[:1], nil
+		return inputStr[:1+screenOffset], nil
 	} else {
 		if isMultipleCyphersInSubstr {
 			return "", ErrInvalidString
 		}
-		return inputStr[:2], nil
+		return inputStr[:2+screenOffset], nil
 	}
 }
 
 func unpackSubstr(substr string) string {
 	runes := []rune(substr)
-	if len(runes) < 2 {
-		return substr
-	} else {
-		charCount, _ := strconv.Atoi(substr[1:]) // we checked that the second char is digit before
-		return strings.Repeat(substr[0:1], charCount)
+	if runes[0] == '\\' {
+		substr = substr[1:]
 	}
+	if len(substr) < 2 {
+		return substr
+	}
+	charCount, _ := strconv.Atoi(substr[1:]) // we checked that the second char is digit before
+	return strings.Repeat(substr[0:1], charCount)
 }
