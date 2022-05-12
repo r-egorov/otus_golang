@@ -72,6 +72,8 @@ func BenchmarkUnpack(b *testing.B) {
 	}
 }
 
+// Private functions tested below.
+
 func TestFindNextSubstr(t *testing.T) {
 	cases := []struct {
 		input, expected []rune
