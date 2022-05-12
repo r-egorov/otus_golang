@@ -25,28 +25,25 @@ func Unpack(inputStr string) (string, error) {
 }
 
 func findNextSubstr(runes []rune) ([]rune, error) {
-	screenOffset := 0
-
 	if unicode.IsDigit(runes[0]) {
 		return nil, ErrInvalidString
 	}
 
+	screenOffset := 0
 	if runes[0] == '\\' {
-		if len(runes) < 2 {
-			return nil, ErrInvalidString
-		}
-		if !unicode.IsDigit(runes[1]) && runes[1] != '\\' {
+		canBeScreened := len(runes) > 1 && (unicode.IsDigit(runes[1]) || runes[1] == '\\')
+		if !canBeScreened {
 			return nil, ErrInvalidString
 		}
 		screenOffset = 1
 	}
 
 	isSubstrOneChar := len(runes) < 2+screenOffset || !unicode.IsDigit(runes[1+screenOffset])
-	isMultipleCyphersInSubstr := len(runes) > 2+screenOffset && unicode.IsDigit(runes[2+screenOffset])
-
 	if isSubstrOneChar {
 		return runes[:1+screenOffset], nil
 	}
+
+	isMultipleCyphersInSubstr := len(runes) > 2+screenOffset && unicode.IsDigit(runes[2+screenOffset])
 	if isMultipleCyphersInSubstr {
 		return nil, ErrInvalidString
 	}
