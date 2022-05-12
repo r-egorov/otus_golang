@@ -7,7 +7,11 @@ import (
 	"unicode"
 )
 
-var ErrInvalidString = errors.New("invalid string")
+var (
+	ErrDigitNotScreened = errors.New("digit not screened")
+	ErrMultipleDigits   = errors.New("numbers not allowed, only digits")
+	ErrInvalidScreen    = errors.New("invalid symbol screened")
+)
 
 func Unpack(inputStr string) (string, error) {
 	var b strings.Builder
@@ -26,14 +30,14 @@ func Unpack(inputStr string) (string, error) {
 
 func findNextSubstr(runes []rune) ([]rune, error) {
 	if unicode.IsDigit(runes[0]) {
-		return nil, ErrInvalidString
+		return nil, ErrDigitNotScreened
 	}
 
 	screenOffset := 0
 	if runes[0] == '\\' {
 		canBeScreened := len(runes) > 1 && (unicode.IsDigit(runes[1]) || runes[1] == '\\')
 		if !canBeScreened {
-			return nil, ErrInvalidString
+			return nil, ErrInvalidScreen
 		}
 		screenOffset = 1
 	}
@@ -45,7 +49,7 @@ func findNextSubstr(runes []rune) ([]rune, error) {
 
 	isMultipleCyphersInSubstr := len(runes) > 2+screenOffset && unicode.IsDigit(runes[2+screenOffset])
 	if isMultipleCyphersInSubstr {
-		return nil, ErrInvalidString
+		return nil, ErrMultipleDigits
 	}
 	return runes[:2+screenOffset], nil
 }

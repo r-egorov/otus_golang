@@ -42,19 +42,22 @@ func TestUnpack(t *testing.T) {
 }
 
 func TestUnpackInvalidString(t *testing.T) {
-	invalidStrings := []string{
-		"3abc",
-		"45",
-		"aaa10b",
-		"п19ривет",
-		`\Привет`,
-		`\123ы`,
+	invalidCases := []struct {
+		input string
+		err   error
+	}{
+		{"3abc", ErrDigitNotScreened},
+		{"45", ErrDigitNotScreened},
+		{"aaa10b", ErrMultipleDigits},
+		{"п19ривет", ErrMultipleDigits},
+		{`\Привет`, ErrInvalidScreen},
+		{`\123ы`, ErrMultipleDigits},
 	}
-	for _, tc := range invalidStrings {
+	for _, tc := range invalidCases {
 		tc := tc
-		t.Run(tc, func(t *testing.T) {
-			_, err := Unpack(tc)
-			require.Truef(t, errors.Is(err, ErrInvalidString), "actual error %q", err)
+		t.Run(tc.input, func(t *testing.T) {
+			_, err := Unpack(tc.input)
+			require.Truef(t, errors.Is(err, tc.err), "actual error %q", err)
 		})
 	}
 }
@@ -101,21 +104,24 @@ func TestFindNextSubstr(t *testing.T) {
 }
 
 func TestFindNextSubstrInvalidString(t *testing.T) {
-	invalidStrings := [][]rune{
-		[]rune("4"),
-		[]rune("3a4"),
-		[]rune("45cc3"),
-		[]rune("a10b"),
-		[]rune("a45"),
-		[]rune(`\`),
-		[]rune(`\n5`),
-		[]rune(`\П5`),
-		[]rune("П55"),
+	invalidStrings := []struct {
+		input []rune
+		err   error
+	}{
+		{[]rune("4"), ErrDigitNotScreened},
+		{[]rune("3a4"), ErrDigitNotScreened},
+		{[]rune("45cc3"), ErrDigitNotScreened},
+		{[]rune("a10b"), ErrMultipleDigits},
+		{[]rune("a45"), ErrMultipleDigits},
+		{[]rune(`\`), ErrInvalidScreen},
+		{[]rune(`\n5`), ErrInvalidScreen},
+		{[]rune(`\П5`), ErrInvalidScreen},
+		{[]rune("П55"), ErrMultipleDigits},
 	}
 	for _, tc := range invalidStrings {
-		t.Run(string(tc), func(t *testing.T) {
-			_, err := findNextSubstr(tc)
-			require.Truef(t, errors.Is(err, ErrInvalidString), "actual error %q", err)
+		t.Run(string(tc.input), func(t *testing.T) {
+			_, err := findNextSubstr(tc.input)
+			require.Truef(t, errors.Is(err, tc.err), "actual error %q", err)
 		})
 	}
 }
