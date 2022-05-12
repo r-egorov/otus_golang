@@ -12,8 +12,9 @@ var ErrInvalidString = errors.New("invalid string")
 func Unpack(inputStr string) (string, error) {
 	var b strings.Builder
 
-	for pos := 0; pos < len(inputStr); {
-		substr, err := findNextSubstr(inputStr[pos:])
+	runes := []rune(inputStr)
+	for pos := 0; pos < len(runes); {
+		substr, err := findNextSubstr(runes[pos:])
 		if err != nil {
 			return "", err
 		}
@@ -23,20 +24,19 @@ func Unpack(inputStr string) (string, error) {
 	return b.String(), nil
 }
 
-func findNextSubstr(inputStr string) (string, error) {
-	runes := []rune(inputStr)
+func findNextSubstr(runes []rune) ([]rune, error) {
 	screenOffset := 0
 
 	if unicode.IsDigit(runes[0]) {
-		return "", ErrInvalidString
+		return nil, ErrInvalidString
 	}
 
 	if runes[0] == '\\' {
 		if len(runes) < 2 {
-			return "", ErrInvalidString
+			return nil, ErrInvalidString
 		}
 		if !unicode.IsDigit(runes[1]) && runes[1] != '\\' {
-			return "", ErrInvalidString
+			return nil, ErrInvalidString
 		}
 		screenOffset = 1
 	}
@@ -45,23 +45,22 @@ func findNextSubstr(inputStr string) (string, error) {
 	isMultipleCyphersInSubstr := len(runes) > 2+screenOffset && unicode.IsDigit(runes[2+screenOffset])
 
 	if isSubstrOneChar {
-		return inputStr[:1+screenOffset], nil
+		return runes[:1+screenOffset], nil
 	} else {
 		if isMultipleCyphersInSubstr {
-			return "", ErrInvalidString
+			return nil, ErrInvalidString
 		}
-		return inputStr[:2+screenOffset], nil
+		return runes[:2+screenOffset], nil
 	}
 }
 
-func unpackSubstr(substr string) string {
-	runes := []rune(substr)
+func unpackSubstr(runes []rune) string {
 	if runes[0] == '\\' {
-		substr = substr[1:]
+		runes = runes[1:]
 	}
-	if len(substr) < 2 {
-		return substr
+	if len(runes) < 2 {
+		return string(runes)
 	}
-	charCount, _ := strconv.Atoi(substr[1:]) // we checked that the second char is digit before
-	return strings.Repeat(substr[0:1], charCount)
+	charCount, _ := strconv.Atoi(string(runes[1])) // we checked that the second char is digit before
+	return strings.Repeat(string(runes[0:1]), charCount)
 }

@@ -2,6 +2,7 @@ package hw02unpackstring
 
 import (
 	"errors"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -21,6 +22,12 @@ var testCasesValid = []struct {
 	{input: `qwe\45`, expected: `qwe44444`},
 	{input: `qwe\\5`, expected: `qwe\\\\\`},
 	{input: `qwe\\\3`, expected: `qwe\3`},
+	// Unicode tests
+	{input: "Привет!", expected: "Привет!"},
+	{input: "П2р3ивет4!", expected: "ППррриветттт!"},
+	{input: "П", expected: "П"},
+	{input: `\\0Прив4ет\35`, expected: `Приввввет33333`},
+	{input: `😅5😅`, expected: `😅😅😅😅😅😅`},
 }
 
 func TestUnpack(t *testing.T) {
@@ -35,7 +42,14 @@ func TestUnpack(t *testing.T) {
 }
 
 func TestUnpackInvalidString(t *testing.T) {
-	invalidStrings := []string{"3abc", "45", "aaa10b"}
+	invalidStrings := []string{
+		"3abc",
+		"45",
+		"aaa10b",
+		"п19ривет",
+		`\Привет`,
+		`\123ы`,
+	}
 	for _, tc := range invalidStrings {
 		tc := tc
 		t.Run(tc, func(t *testing.T) {
@@ -57,42 +71,49 @@ func BenchmarkUnpack(b *testing.B) {
 
 func TestFindNextSubstr(t *testing.T) {
 	cases := []struct {
-		input, expected string
+		input, expected []rune
 	}{
-		{"a3b4c5", "a3"},
-		{"b4c5", "b4"},
-		{"c5", "c5"},
-		{"s", "s"},
-		{"ab5cc3a", "a"},
+		{[]rune("a3b4c5"), []rune("a3")},
+		{[]rune("b4c5"), []rune("b4")},
+		{[]rune("c5"), []rune("c5")},
+		{[]rune("s"), []rune("s")},
+		{[]rune("ab5cc3a"), []rune("a")},
 		// tasks with asterisk
-		{`\4`, `\4`},
-		{`\\`, `\\`},
-		{`\45a5`, `\45`},
-		{`\\5bca`, `\\5`},
-		{`\\\5a5`, `\\`},
+		{[]rune(`\4`), []rune(`\4`)},
+		{[]rune(`\\`), []rune(`\\`)},
+		{[]rune(`\45a5`), []rune(`\45`)},
+		{[]rune(`\\5bca`), []rune(`\\5`)},
+		{[]rune(`\\\5a5`), []rune(`\\`)},
+		// Unicode tests
+		{[]rune(`пр2иве5т`), []rune(`п`)},
+		{[]rune(`р2иве5т`), []rune(`р2`)},
+		{[]rune(`иве5т`), []rune(`и`)},
+		{[]rune(`е5т`), []rune(`е5`)},
 	}
 	for _, tc := range cases {
 		t.Run(
-			tc.input, func(t *testing.T) {
+			string(tc.input), func(t *testing.T) {
 				result, err := findNextSubstr(tc.input)
 				require.NoError(t, err)
-				require.Equal(t, tc.expected, result)
+				require.True(t, reflect.DeepEqual(tc.expected, result))
 			})
 	}
 }
 
 func TestFindNextSubstrInvalidString(t *testing.T) {
-	invalidStrings := []string{
-		"4",
-		"3a4",
-		"45cc3",
-		"a10b",
-		"a45",
-		`\`,
-		`\n5`,
+	invalidStrings := [][]rune{
+		[]rune("4"),
+		[]rune("3a4"),
+		[]rune("45cc3"),
+		[]rune("a10b"),
+		[]rune("a45"),
+		[]rune(`\`),
+		[]rune(`\n5`),
+		[]rune(`\П5`),
+		[]rune("П55"),
 	}
 	for _, tc := range invalidStrings {
-		t.Run(tc, func(t *testing.T) {
+		t.Run(string(tc), func(t *testing.T) {
 			_, err := findNextSubstr(tc)
 			require.Truef(t, errors.Is(err, ErrInvalidString), "actual error %q", err)
 		})
@@ -101,20 +122,23 @@ func TestFindNextSubstrInvalidString(t *testing.T) {
 
 func TestUnpackSubstr(t *testing.T) {
 	cases := []struct {
-		input, expected string
+		input    []rune
+		expected string
 	}{
-		{"a3", "aaa"},
-		{"b", "b"},
-		{"c5", "ccccc"},
+		{[]rune("a3"), "aaa"},
+		{[]rune("b"), "b"},
+		{[]rune("c5"), "ccccc"},
 		// tasks with asterisk
-		{`\\`, `\`},
-		{`\\5`, `\\\\\`},
-		{`\4`, "4"},
-		{`\42`, "44"},
+		{[]rune(`\\`), `\`},
+		{[]rune(`\\5`), `\\\\\`},
+		{[]rune(`\4`), "4"},
+		{[]rune(`\42`), "44"},
+		{[]rune(`ё5`), "ёёёёё"},
+		{[]rune(`ё`), "ё"},
 	}
 	for _, tc := range cases {
 		t.Run(
-			tc.input, func(t *testing.T) {
+			string(tc.input), func(t *testing.T) {
 				result := unpackSubstr(tc.input)
 				require.Equal(t, tc.expected, result)
 			})
