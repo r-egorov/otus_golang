@@ -46,12 +46,11 @@ func findNextSubstr(runes []rune) ([]rune, error) {
 
 	if isSubstrOneChar {
 		return runes[:1+screenOffset], nil
-	} else {
-		if isMultipleCyphersInSubstr {
-			return nil, ErrInvalidString
-		}
-		return runes[:2+screenOffset], nil
 	}
+	if isMultipleCyphersInSubstr {
+		return nil, ErrInvalidString
+	}
+	return runes[:2+screenOffset], nil
 }
 
 func unpackSubstr(runes []rune) string {
