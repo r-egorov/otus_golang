@@ -1,7 +1,6 @@
 package hw03frequencyanalysis
 
 import (
-	"fmt"
 	"sort"
 	"strings"
 )
@@ -34,7 +33,6 @@ func Top10(inputStr string) []string {
 
 	wordCounters = wordCounters[:10]
 
-	fmt.Println(wordCounters)
 	for i := 0; i < 10; i++ {
 		if i < 9 && wordCounters[i+1].count == wordCounters[i].count {
 			j := i
