@@ -1,55 +1,73 @@
 package hw03frequencyanalysis
 
 import (
+	"regexp"
 	"sort"
 	"strings"
 )
 
-type wordCounter struct {
+type wordFrequency struct {
 	word  string
 	count int
 }
 
+var sep = regexp.MustCompile(`[.,!:?;"'\s]+-*\s*`) // Spaces and punctuation or dash
+
 func Top10(inputStr string) []string {
-	words := strings.Fields(inputStr)
+	res := []string{}
 
-	if len(words) == 0 {
-		return []string{}
+	if len(inputStr) > 0 {
+		words := splitIntoWords(inputStr)
+		wordFrequencies := countWords(words)
+		wordFrequencies = getTop10WordFrequencies(wordFrequencies)
+		res = getWords(wordFrequencies)
 	}
 
-	wordCount := map[string]int{}
+	return res
+}
+
+func splitIntoWords(text string) []string {
+	return sep.Split(text, -1)
+}
+
+func countWords(words []string) []wordFrequency {
+	wordCountMap := map[string]int{}
 	for _, word := range words {
-		wordCount[word]++
+		wordCountMap[strings.ToLower(word)]++
 	}
 
-	var wordCounters []wordCounter
-	for word, count := range wordCount {
-		wordCounters = append(wordCounters, wordCounter{word, count})
+	var wordFrequencies []wordFrequency
+	for word, count := range wordCountMap {
+		wordFrequencies = append(wordFrequencies, wordFrequency{word, count})
 	}
 
-	sort.Slice(wordCounters, func(left, right int) bool {
-		return wordCounters[left].count > wordCounters[right].count
+	return wordFrequencies
+}
+
+func getTop10WordFrequencies(wordFrequencies []wordFrequency) []wordFrequency {
+	sort.Slice(wordFrequencies, func(left, right int) bool {
+		// First we sort by count, but in case it's equal we sort by word
+		if wordFrequencies[left].count > wordFrequencies[right].count {
+			return true
+		}
+		if wordFrequencies[left].count < wordFrequencies[right].count {
+			return false
+		}
+		return wordFrequencies[left].word < wordFrequencies[right].word
 	})
 
-	wordCounters = wordCounters[:10]
-
-	for i := 0; i < 10; i++ {
-		if i < 9 && wordCounters[i+1].count == wordCounters[i].count {
-			j := i
-			for ; j < 9 && wordCounters[j].count == wordCounters[j+1].count; j++ {
-			}
-			subSlice := wordCounters[i : j+1]
-			sort.Slice(subSlice, func(left, right int) bool {
-				return subSlice[left].word < subSlice[right].word
-			})
-			i = j
-		}
+	var rightBorder int
+	if len(wordFrequencies) < 10 {
+		rightBorder = len(wordFrequencies)
+	} else {
+		rightBorder = 10
 	}
+	return wordFrequencies[:rightBorder]
+}
 
-	var topWords []string
-	for _, wc := range wordCounters {
-		topWords = append(topWords, wc.word)
+func getWords(wordFrequencies []wordFrequency) (words []string) {
+	for _, wc := range wordFrequencies {
+		words = append(words, wc.word)
 	}
-
-	return topWords
+	return
 }
