@@ -36,7 +36,7 @@ func countWords(words []string) []wordFrequency {
 		wordCountMap[strings.ToLower(word)]++
 	}
 
-	var wordFrequencies []wordFrequency
+	wordFrequencies := make([]wordFrequency, 0, len(wordCountMap))
 	for word, count := range wordCountMap {
 		wordFrequencies = append(wordFrequencies, wordFrequency{word, count})
 	}
