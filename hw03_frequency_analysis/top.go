@@ -56,12 +56,11 @@ func getTop10WordFrequencies(wordFrequencies []wordFrequency) []wordFrequency {
 		return wordFrequencies[left].word < wordFrequencies[right].word
 	})
 
-	var rightBorder int
+	rightBorder := 10
 	if len(wordFrequencies) < 10 {
 		rightBorder = len(wordFrequencies)
-	} else {
-		rightBorder = 10
 	}
+
 	return wordFrequencies[:rightBorder]
 }
 
