@@ -7,7 +7,7 @@ import (
 )
 
 // Change to true if needed.
-var taskWithAsteriskIsCompleted = false
+var taskWithAsteriskIsCompleted = true
 
 var text = `Как видите, он  спускается  по  лестнице  вслед  за  своим
 	другом   Кристофером   Робином,   головой   вниз,  пересчитывая
@@ -78,5 +78,112 @@ func TestTop10(t *testing.T) {
 			}
 			require.Equal(t, expected, Top10(text))
 		}
+	})
+
+	t.Run("less than 10 words in the input text", func(t *testing.T) {
+		testCases := []struct {
+			text     string
+			expected []string
+		}{
+			{
+				text: "some text which is not long",
+				expected: []string{
+					"is",
+					"long",
+					"not",
+					"some",
+					"text",
+					"which",
+				},
+			},
+			{
+				text: "some",
+				expected: []string{
+					"some",
+				},
+			},
+			{
+				text: "some text is not long",
+				expected: []string{
+					"is",
+					"long",
+					"not",
+					"some",
+					"text",
+				},
+			},
+		}
+		for _, tc := range testCases {
+			require.Equal(t, tc.expected, Top10(tc.text))
+		}
+	})
+
+	t.Run("more than 10 words, same frequency", func(t *testing.T) {
+		testText := `ggg ggg ggg ggg ggg ggg ggg ggg ggg ggg
+					fff fff fff fff fff fff fff fff fff fff
+					ttt ttt ttt ttt ttt ttt ttt ttt ttt ttt
+					rrr rrr rrr rrr rrr rrr rrr rrr rrr rrr
+					nnn nnn nnn nnn nnn nnn nnn nnn nnn nnn
+					bbb bbb bbb bbb bbb bbb bbb bbb bbb bbb
+					ccc ccc ccc ccc ccc ccc ccc ccc ccc ccc
+					ppp ppp ppp ppp ppp ppp ppp ppp ppp ppp
+					ddd ddd ddd ddd ddd ddd ddd ddd ddd ddd
+					sss sss sss sss sss sss sss sss sss sss
+					eee eee eee eee eee eee eee eee eee eee
+					hhh hhh hhh hhh hhh hhh hhh hhh hhh hhh
+					aaa aaa aaa aaa aaa aaa aaa aaa aaa aaa
+					iii iii iii iii iii iii iii iii iii iii
+					kkk kkk kkk kkk kkk kkk kkk kkk kkk kkk
+					lll lll lll lll lll lll lll lll lll lll
+					mmm mmm mmm mmm mmm mmm mmm mmm mmm mmm
+					ooo ooo ooo ooo ooo ooo ooo ooo ooo ooo
+					`
+		expected := []string{
+			"aaa",
+			"bbb",
+			"ccc",
+			"ddd",
+			"eee",
+			"fff",
+			"ggg",
+			"hhh",
+			"iii",
+			"kkk",
+		}
+		require.Equal(t, expected, Top10(testText))
+	})
+
+	t.Run("consecutive punctuation", func(t *testing.T) {
+		testText := `hello I would like to say hello,, but there are two commas`
+		expected := []string{
+			"hello", // 2 times, others in lexicographical order
+			"are",
+			"but",
+			"commas",
+			"i",
+			"like",
+			"say",
+			"there",
+			"to",
+			"two",
+		}
+		require.Equal(t, expected, Top10(testText))
+	})
+
+	t.Run("quotes", func(t *testing.T) {
+		testText := `hello I would like to say "hello",, but there are two commas`
+		expected := []string{
+			"hello", // 2 times, others in lexicographical order
+			"are",
+			"but",
+			"commas",
+			"i",
+			"like",
+			"say",
+			"there",
+			"to",
+			"two",
+		}
+		require.Equal(t, expected, Top10(testText))
 	})
 }
