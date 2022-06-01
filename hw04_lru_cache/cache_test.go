@@ -149,6 +149,11 @@ func TestCache(t *testing.T) {
 			require.False(t, ok)
 			require.Nil(t, val)
 		}
+
+		for _, item := range items {
+			wasInCache := c.Set(item.key, item.value)
+			require.False(t, wasInCache)
+		}
 	})
 }
 

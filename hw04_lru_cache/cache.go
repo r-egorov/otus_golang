@@ -49,9 +49,9 @@ func (l *lruCache) Get(key Key) (interface{}, bool) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	node, isInCache := l.items[key]
 	var cachedValue interface{} = nil
 
+	node, isInCache := l.items[key]
 	if isInCache {
 		l.queue.MoveToFront(node)
 		item := l.cachedItemFromNode(node)
@@ -59,6 +59,10 @@ func (l *lruCache) Get(key Key) (interface{}, bool) {
 	}
 
 	return cachedValue, isInCache
+}
+
+func (l *lruCache) cachedItemFromNode(node *ListItem) *cacheItem {
+	return node.Value.(*cacheItem)
 }
 
 func (l *lruCache) Set(key Key, value interface{}) bool {
@@ -71,7 +75,7 @@ func (l *lruCache) Set(key Key, value interface{}) bool {
 		item.value = value
 		l.queue.MoveToFront(node)
 	} else {
-		if l.quequeIsFull() {
+		if l.isQueueFull() {
 			l.popLastFromQueue()
 		}
 		item := newCacheItem(key, value)
@@ -81,7 +85,7 @@ func (l *lruCache) Set(key Key, value interface{}) bool {
 	return isInCache
 }
 
-func (l *lruCache) quequeIsFull() bool {
+func (l *lruCache) isQueueFull() bool {
 	return l.queue.Len() == l.capacity
 }
 
@@ -90,8 +94,4 @@ func (l *lruCache) popLastFromQueue() {
 	leastUsedItem := l.cachedItemFromNode(leastUsedNode)
 	delete(l.items, leastUsedItem.key)
 	l.queue.Remove(leastUsedNode)
-}
-
-func (l *lruCache) cachedItemFromNode(node *ListItem) *cacheItem {
-	return node.Value.(*cacheItem)
 }
