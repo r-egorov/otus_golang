@@ -52,23 +52,27 @@ func (l *list) Back() *ListItem {
 
 func (l *list) PushFront(v interface{}) *ListItem {
 	toInsert := newNode(v)
+
 	insertFront := func(node *ListItem) {
 		node.Next = l.front
 		l.front.Prev = node
 		l.front = node
 	}
 	l.insert(toInsert, insertFront)
+
 	return toInsert
 }
 
 func (l *list) PushBack(v interface{}) *ListItem {
 	toInsert := newNode(v)
+
 	insertBack := func(node *ListItem) {
 		node.Prev = l.back
 		l.back.Next = node
 		l.back = node
 	}
 	l.insert(toInsert, insertBack)
+
 	return toInsert
 }
 
