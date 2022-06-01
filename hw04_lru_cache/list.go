@@ -52,34 +52,34 @@ func (l *list) Back() *ListItem {
 
 func (l *list) PushFront(v interface{}) *ListItem {
 	toInsert := newNode(v)
-
-	if l.isEmpty() {
-		l.front = toInsert
-		l.back = toInsert
-	} else {
-		toInsert.Next = l.front
-		l.front.Prev = toInsert
-		l.front = toInsert
+	insertFront := func(node *ListItem) {
+		node.Next = l.front
+		l.front.Prev = node
+		l.front = node
 	}
-	l.len++
-
+	l.insert(toInsert, insertFront)
 	return toInsert
 }
 
 func (l *list) PushBack(v interface{}) *ListItem {
 	toInsert := newNode(v)
+	insertBack := func(node *ListItem) {
+		node.Prev = l.back
+		l.back.Next = node
+		l.back = node
+	}
+	l.insert(toInsert, insertBack)
+	return toInsert
+}
 
-	if l.isEmpty() { // Empty list
+func (l *list) insert(toInsert *ListItem, insertFrontOrBack func(*ListItem)) {
+	if l.isEmpty() {
 		l.front = toInsert
 		l.back = toInsert
 	} else {
-		toInsert.Prev = l.back
-		l.back.Next = toInsert
-		l.back = toInsert
+		insertFrontOrBack(toInsert)
 	}
 	l.len++
-
-	return toInsert
 }
 
 func (l *list) Remove(i *ListItem) {
@@ -93,15 +93,6 @@ func (l *list) Remove(i *ListItem) {
 	l.len--
 }
 
-func (l *list) tiePrevAndNext(i *ListItem) {
-	if i.Prev != nil {
-		i.Prev.Next = i.Next
-	}
-	if i.Next != nil {
-		i.Next.Prev = i.Prev
-	}
-}
-
 func (l *list) MoveToFront(i *ListItem) {
 	if i != l.front {
 		if i == l.back {
@@ -112,5 +103,14 @@ func (l *list) MoveToFront(i *ListItem) {
 		i.Next = l.front
 		l.front.Prev = i
 		l.front = i
+	}
+}
+
+func (l *list) tiePrevAndNext(i *ListItem) {
+	if i.Prev != nil {
+		i.Prev.Next = i.Next
+	}
+	if i.Next != nil {
+		i.Next.Prev = i.Prev
 	}
 }
