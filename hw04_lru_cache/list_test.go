@@ -8,7 +8,6 @@ import (
 )
 
 func TestList(t *testing.T) {
-
 	t.Run("empty list", func(t *testing.T) {
 		l := NewList()
 

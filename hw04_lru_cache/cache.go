@@ -49,7 +49,7 @@ func (l *lruCache) Get(key Key) (interface{}, bool) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	var cachedValue interface{} = nil
+	var cachedValue interface{}
 
 	node, isInCache := l.items[key]
 	if isInCache {
