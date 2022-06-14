@@ -29,8 +29,6 @@ func NewList() List {
 func newNode(v interface{}) *ListItem {
 	res := new(ListItem)
 	res.Value = v
-	res.Prev = nil
-	res.Next = nil
 	return res
 }
 
@@ -98,16 +96,18 @@ func (l *list) Remove(i *ListItem) {
 }
 
 func (l *list) MoveToFront(i *ListItem) {
-	if i != l.front {
-		if i == l.back {
-			l.back = i.Prev
-		}
-		l.tiePrevAndNext(i)
-		i.Prev = nil
-		i.Next = l.front
-		l.front.Prev = i
-		l.front = i
+	if i == l.front {
+		return
 	}
+
+	if i == l.back {
+		l.back = i.Prev
+	}
+	l.tiePrevAndNext(i)
+	i.Prev = nil
+	i.Next = l.front
+	l.front.Prev = i
+	l.front = i
 }
 
 func (l *list) tiePrevAndNext(i *ListItem) {

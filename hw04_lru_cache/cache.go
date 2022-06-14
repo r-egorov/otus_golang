@@ -70,18 +70,20 @@ func (l *lruCache) Set(key Key, value interface{}) bool {
 	defer l.mu.Unlock()
 
 	node, isInCache := l.items[key]
+
 	if isInCache {
 		item := l.cachedItemFromNode(node)
 		item.value = value
 		l.queue.MoveToFront(node)
-	} else {
-		if l.isQueueFull() {
-			l.popLastFromQueue()
-		}
-		item := newCacheItem(key, value)
-		node = l.queue.PushFront(item)
-		l.items[key] = node
+		return isInCache
 	}
+
+	if l.isQueueFull() {
+		l.popLastFromQueue()
+	}
+	item := newCacheItem(key, value)
+	node = l.queue.PushFront(item)
+	l.items[key] = node
 	return isInCache
 }
 
