@@ -28,16 +28,16 @@ func Run(tasks []Task, n, m int) error {
 	var wg sync.WaitGroup
 	errsCount := 0
 
-	routinesCount := len(tasks)
-	if n < routinesCount {
-		routinesCount = n
+	workersCount := len(tasks)
+	if n < workersCount {
+		workersCount = n
 	}
 
-	for i := 0; i < len(tasks); i += routinesCount {
-		errs := make(chan error, routinesCount)
-		wg.Add(routinesCount)
+	for i := 0; i < len(tasks); i += workersCount {
+		errs := make(chan error, workersCount)
+		wg.Add(workersCount)
 
-		for j := 0; j < routinesCount; j++ {
+		for j := 0; j < workersCount; j++ {
 			go func(task_idx int) {
 				defer wg.Done()
 				errs <- tasks[task_idx]()
