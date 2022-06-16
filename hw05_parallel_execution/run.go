@@ -10,17 +10,20 @@ var ErrErrorsLimitExceeded = errors.New("errors limit exceeded")
 type Task func() error
 
 // Run starts tasks in n goroutines and stops its work when receiving m errors from tasks.
+// If m <= 0, it ignores all the errors.
 func Run(tasks []Task, n, m int) error {
 	var wg sync.WaitGroup
 	errsCount := 0
 
-	workersCount := len(tasks)
+	workersCount := len(tasks) // launch no more goroutines than tasks
 	if n < workersCount {
 		workersCount = n
 	}
 
+	errs := make(chan error, workersCount)
+	defer close(errs)
+
 	for i := 0; i < len(tasks); i += workersCount {
-		errs := make(chan error, workersCount)
 		wg.Add(workersCount)
 
 		for j := 0; j < workersCount; j++ {
@@ -31,18 +34,15 @@ func Run(tasks []Task, n, m int) error {
 		}
 
 		wg.Wait()
-		close(errs)
 
-		if m > 0 {
-			for err := range errs {
-				if err != nil {
-					errsCount++
-				}
+		for j := 0; j < workersCount; j++ {
+			if err := <-errs; err != nil {
+				errsCount++
 			}
+		}
 
-			if errsCount >= m {
-				return ErrErrorsLimitExceeded
-			}
+		if m > 0 && errsCount >= m {
+			return ErrErrorsLimitExceeded
 		}
 	}
 	return nil
