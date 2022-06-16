@@ -83,6 +83,34 @@ func TestRun(t *testing.T) {
 		require.LessOrEqual(t, int64(elapsedTime), int64(sumTime/2), "tasks were run sequentially?")
 	})
 
+	t.Run("Run with M <= 0", func(t *testing.T) {
+		// In this case the Run function should ignore all the mistakes
+		tasksCount := 50
+		workersCount := 5
+		maxErrorsCount := 0
+
+		tasks := make([]Task, 0, tasksCount)
+
+		var runTasksCount int32
+
+		// Going to be 25 errors and 25 successes
+		for i := 0; i < tasksCount/2; i++ {
+			err := fmt.Errorf("error from task %d", i)
+			tasks = append(tasks, func() error {
+				atomic.AddInt32(&runTasksCount, 1)
+				return err
+			})
+			tasks = append(tasks, func() error {
+				atomic.AddInt32(&runTasksCount, 1)
+				return nil
+			})
+		}
+
+		err := Run(tasks, workersCount, maxErrorsCount)
+		require.NoError(t, err)
+		require.Equal(t, runTasksCount, int32(tasksCount), "not all tasks were completed")
+	})
+
 	t.Run("tasks without errors without sleep", func(t *testing.T) {
 		cases := []testCase{
 			{50, 5, 1},

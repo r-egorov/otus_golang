@@ -24,23 +24,25 @@ func Run(tasks []Task, n, m int) error {
 		wg.Add(workersCount)
 
 		for j := 0; j < workersCount; j++ {
-			go func(task_idx int) {
+			go func(taskIdx int) {
 				defer wg.Done()
-				errs <- tasks[task_idx]()
+				errs <- tasks[taskIdx]()
 			}(i + j)
 		}
 
 		wg.Wait()
 		close(errs)
 
-		for err := range errs {
-			if err != nil {
-				errsCount++
+		if m > 0 {
+			for err := range errs {
+				if err != nil {
+					errsCount++
+				}
 			}
-		}
 
-		if errsCount >= m {
-			return ErrErrorsLimitExceeded
+			if errsCount >= m {
+				return ErrErrorsLimitExceeded
+			}
 		}
 	}
 	return nil
