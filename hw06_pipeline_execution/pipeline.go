@@ -11,31 +11,33 @@ type Stage func(in In) (out Out)
 func ExecutePipeline(inPipeline In, done In, stages ...Stage) Out {
 	outPipeline := make(Bi)
 
-	inFirstStage := make(Bi)
-	outLastStage := launchStages(inFirstStage, stages)
+	inFirstStage, outLastStage := launchStages(stages)
 
-	go consumeAndRedirectInput(inPipeline, inFirstStage, done)
+	go redirectInput(inPipeline, inFirstStage, done)
 	go redirectLastStageResult(outLastStage, outPipeline, done)
 
 	return outPipeline
 }
 
 // Launches all the stages.
-// Param `in` - a read-only channel for sending input to the first stage
-// Returns an output channel of the last stage.
-func launchStages(inStage In, stages []Stage) Out {
+// Returns a bidirectional channel, used as input of the first stage
+// and an output channel of the last stage.
+func launchStages(stages []Stage) (Bi, Out) {
+	inFirstStage := make(Bi)
+
+	var inStage In = inFirstStage
 	var outLastStage Out
 	for _, stage := range stages {
 		outLastStage = stage(inStage)
 		inStage = outLastStage
 	}
-	return outLastStage
+	return inFirstStage, outLastStage
 }
 
 // Consumes values from `source`, redirects them to `dest`,
 // stops if `done` is closed,
 // closes `dest` when done.
-func consumeAndRedirectInput(source In, dest Bi, done In) {
+func redirectInput(source In, dest Bi, done In) {
 	defer close(dest)
 
 	for inValue := range source {
