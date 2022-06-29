@@ -8,67 +8,69 @@ type (
 
 type Stage func(in In) (out Out)
 
-func ExecutePipeline(inPipeline In, done In, stages ...Stage) Out {
-	outPipeline := make(Bi)
-
-	inFirstStage, outLastStage := launchStages(stages)
-
-	go redirectInput(inPipeline, inFirstStage, done)
-	go redirectLastStageResult(outLastStage, outPipeline, done)
+func ExecutePipeline(in In, done In, stages ...Stage) Out {
+	inFirstStage := redirectInputToFirstStage(in, done)
+	outLastStage := launchStages(inFirstStage, stages)
+	outPipeline := redirectOutputFromLastStage(outLastStage, done)
 
 	return outPipeline
 }
 
-// Launches all the stages.
-// Returns a bidirectional channel, used as input of the first stage
-// and an output channel of the last stage.
-func launchStages(stages []Stage) (Bi, Out) {
-	inFirstStage := make(Bi)
+// Creates a `dest` channel, where redirects values from `source` to,
+// stops if `done` is closed, closes `dest` when done.
+func redirectInputToFirstStage(source In, done In) In {
+	dest := make(Bi)
 
-	var inStage In = inFirstStage
+	go func() {
+		defer close(dest)
+		for inValue := range source {
+			select {
+			case dest <- inValue:
+			case <-done:
+				return
+			}
+		}
+	}()
+
+	return dest
+}
+
+// Launches all the stages,
+// takes the input channel of the first stage as a parameter,
+// returns the output channel of the last stage.
+func launchStages(inStage In, stages []Stage) Out {
 	var outLastStage Out
 	for _, stage := range stages {
 		outLastStage = stage(inStage)
 		inStage = outLastStage
 	}
-	return inFirstStage, outLastStage
-}
-
-// Consumes values from `source`, redirects them to `dest`,
-// stops if `done` is closed,
-// closes `dest` when done.
-func redirectInput(source In, dest Bi, done In) {
-	defer close(dest)
-
-	for inValue := range source {
-		select {
-		case dest <- inValue:
-		case <-done:
-			return
-		}
-	}
+	return outLastStage
 }
 
 // Redirects results to the pipeline's output channel,
 // stops if `done` is closed,
 // closes pipeline's out when done.
-func redirectLastStageResult(outLastStage In, outPipeline Bi, done In) {
-	defer close(outPipeline)
+func redirectOutputFromLastStage(outLastStage In, done In) Out {
+	out := make(Bi)
 
-	for {
-		select {
-		case result, more := <-outLastStage:
-			if more {
+	go func() {
+		defer close(out)
+		for {
+			select {
+			case result, more := <-outLastStage:
+				if !more {
+					return
+				}
 				select {
-				case outPipeline <- result:
+				case out <- result:
 				case <-done:
 					return
 				}
-			} else {
+			case <-done:
 				return
 			}
-		case <-done:
-			return
 		}
-	}
+	}()
+
+	return out
 }
