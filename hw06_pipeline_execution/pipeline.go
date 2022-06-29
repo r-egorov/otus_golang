@@ -8,58 +8,65 @@ type (
 
 type Stage func(in In) (out Out)
 
-func ExecutePipeline(in In, done In, stages ...Stage) Out {
-	out := make(Bi)
+func ExecutePipeline(inPipeline In, done In, stages ...Stage) Out {
+	outPipeline := make(Bi)
 
-	// Make an input channel for the first stage
-	// so that we can close it if need to
 	inFirstStage := make(Bi)
+	outLastStage := launchStages(inFirstStage, stages)
 
-	// Startup the stages,
-	// save input channel of the first stage
-	// save output channel of the last stage (going to be returned)
-	var inNextStage In = inFirstStage
+	go consumeAndRedirectInput(inPipeline, inFirstStage, done)
+	go redirectLastStageResult(outLastStage, outPipeline, done)
+
+	return outPipeline
+}
+
+// Launches all the stages.
+// Param `in` - a read-only channel for sending input to the first stage
+// Returns an output channel of the last stage.
+func launchStages(inStage In, stages []Stage) Out {
 	var outLastStage Out
 	for _, stage := range stages {
-		outLastStage = stage(inNextStage)
-		inNextStage = outLastStage
+		outLastStage = stage(inStage)
+		inStage = outLastStage
 	}
+	return outLastStage
+}
 
-	// start sending values to the pipeline
-	go func() {
-		defer close(inFirstStage)
+// Consumes values from `source`, redirects them to `dest`,
+// stops if `done` is closed,
+// closes `dest` when done.
+func consumeAndRedirectInput(source In, dest Bi, done In) {
+	defer close(dest)
 
-		for inValue := range in {
-			select {
-			case inFirstStage <- inValue:
-			case <-done:
-				return
-			}
+	for inValue := range source {
+		select {
+		case dest <- inValue:
+		case <-done:
+			return
 		}
-	}()
+	}
+}
 
-	// start sending results to the output channel
-	// break if done is closed
-	go func() {
-		defer close(out)
+// Redirects results to the pipeline's output channel,
+// stops if `done` is closed,
+// closes pipeline's out when done.
+func redirectLastStageResult(outLastStage In, outPipeline Bi, done In) {
+	defer close(outPipeline)
 
-		for {
-			select {
-			case result, more := <-outLastStage:
-				if more {
-					select {
-					case out <- result:
-					case <-done:
-						return
-					}
-				} else {
+	for {
+		select {
+		case result, more := <-outLastStage:
+			if more {
+				select {
+				case outPipeline <- result:
+				case <-done:
 					return
 				}
-			case <-done:
+			} else {
 				return
 			}
+		case <-done:
+			return
 		}
-	}()
-
-	return out
+	}
 }
