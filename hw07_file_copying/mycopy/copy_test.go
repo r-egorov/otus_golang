@@ -1,6 +1,7 @@
 package mycopy_test
 
 import (
+	"os"
 	"testing"
 
 	"github.com/r-egorov/otus_golang/hw07_file_copying/mycopy"
@@ -100,5 +101,19 @@ func TestCopyFail(t *testing.T) {
 		err := mycopy.Copy(tc.sourceFile, tc.destFile, offset, 0)
 
 		require.Error(t, err, mycopy.ErrOffsetExceedsFileSize)
+	})
+
+	t.Run("does not copy from /dev/urandom", func(t *testing.T) {
+		t.Skip() // TODO: Make this test pass
+		te := setUpTestEnv(t, testText)
+		defer te.tearDown(t)
+
+		rand, err := os.Open("/dev/urandom")
+		if err != nil {
+			t.Fatal("can't open /dev/urandom")
+		}
+
+		err = mycopy.Copy(rand, te.destFile, 0, 0)
+		require.Error(t, err, mycopy.ErrUnsupportedFile)
 	})
 }

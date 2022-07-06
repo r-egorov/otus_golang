@@ -42,7 +42,7 @@ func Copy(sourceFd, destFd *os.File, offset, limit int64) error {
 func calculateLenToCopy(sourceFd *os.File, offset, limit int64) (int64, error) {
 	fileStat, err := sourceFd.Stat()
 	if err != nil {
-		return 0, err
+		return 0, ErrUnsupportedFile
 	}
 
 	if offset > fileStat.Size() {
