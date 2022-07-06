@@ -1,4 +1,4 @@
-package progress_bar
+package progressbar
 
 import (
 	"fmt"
@@ -18,27 +18,24 @@ type Bar struct {
 }
 
 // Progress takes a current value of an operation,
-// adds it to the `cur` and adjusts the `barString`
+// adds it to the `cur` and adjusts the `barString`.
 func (b *Bar) Progress(cur int64) {
 	b.cur += cur
-	prevPercent := b.percent
 	b.percent = b.getPercent()
-	if b.percent != prevPercent {
-		b.barString = strings.Repeat(b.char, int(b.percent)/(100/barWidth))
-	}
+	b.barString = strings.Repeat(b.char, int(b.percent)/(100/barWidth))
 }
 
 func (b *Bar) getPercent() int64 {
 	return int64((float32(b.cur) / float32(b.total)) * 100)
 }
 
-// Finish stops the output-goroutine, flushes the buffer and prints the finish
+// Finish stops the output-goroutine, flushes the buffer and prints the finish.
 func (b *Bar) Finish() {
 	b.finishChan <- struct{}{}
 	fmt.Printf("\n%*s\n", (barWidth+len(finishMessage))/2, finishMessage)
 }
 
-// Start starts the output-goroutine
+// Start starts the output-goroutine.
 func (b *Bar) Start() {
 	go func() {
 		for {
@@ -46,7 +43,7 @@ func (b *Bar) Start() {
 			case <-b.finishChan:
 				// We need to duplicate the `b.showProgress()` call
 				// because the goroutine does not manage to output
-				// when the limit is too small
+				// when the limit is too small.
 				b.showProgress()
 				return
 			default:
@@ -63,7 +60,7 @@ func (b *Bar) showProgress() {
 	)
 }
 
-// NewProxyReader returns a wrapped reader which watches the read-calls
+// NewProxyReader returns a wrapped reader which watches the read-calls.
 func (b *Bar) NewProxyReader(r io.Reader) *Reader {
 	return &Reader{r, b}
 }

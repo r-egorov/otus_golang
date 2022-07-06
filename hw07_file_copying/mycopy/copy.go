@@ -1,23 +1,20 @@
-package copy
+package mycopy
 
 import (
 	"errors"
 	"io"
 	"os"
+	"time"
 
-	"github.com/r-egorov/otus_golang/hw07_file_copying/progress_bar"
+	"github.com/r-egorov/otus_golang/hw07_file_copying/progressbar"
 )
 
-const defaultBufferSize = 4096
+const defaultBufferSize = 1
 
 var (
 	ErrUnsupportedFile       = errors.New("unsupported file")
 	ErrOffsetExceedsFileSize = errors.New("offset exceeds file size")
 )
-
-type files struct {
-	sourceFd, destFd *os.File
-}
 
 // Copy takes source and destination file descriptors,
 // copies at most `limit` bytes from source to dest,
@@ -30,7 +27,7 @@ func Copy(sourceFd, destFd *os.File, offset, limit int64) error {
 		return err
 	}
 
-	bar := progress_bar.NewBar(lenToCopy)
+	bar := progressbar.NewBar(lenToCopy)
 	barReader := bar.NewProxyReader(sourceFd)
 
 	bar.Start()
@@ -79,6 +76,7 @@ func copyContent(source io.Reader, dest io.Writer, lenToCopy int64) error {
 			return err
 		}
 		totalReadBytes += readBytes
+		time.Sleep(time.Millisecond * 1)
 	}
 	return nil
 }

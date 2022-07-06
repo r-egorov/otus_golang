@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/r-egorov/otus_golang/hw07_file_copying/copy"
+	"github.com/r-egorov/otus_golang/hw07_file_copying/mycopy"
 )
 
 var (
@@ -27,7 +27,7 @@ func main() {
 	flag.Parse()
 
 	// Prepare source FD
-	sourceFd, err := os.OpenFile(from, os.O_RDONLY, 0755)
+	sourceFd, err := os.OpenFile(from, os.O_RDONLY, 0o0755)
 	if err != nil {
 		fmt.Printf("Error: %s: %s\n", ErrSourceFileNotFound, from)
 		return
@@ -42,7 +42,7 @@ func main() {
 	}
 	defer destFd.Close()
 
-	err = copy.Copy(sourceFd, destFd, offset, limit)
+	err = mycopy.Copy(sourceFd, destFd, offset, limit)
 	if err != nil {
 		fmt.Printf("Error: %s\n", err)
 	}

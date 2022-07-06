@@ -1,12 +1,11 @@
-package copy_test
+package mycopy_test
 
 import (
 	"path"
 	"testing"
 
-	"github.com/r-egorov/otus_golang/hw07_file_copying/copy"
-
 	approvals "github.com/approvals/go-approval-tests"
+	"github.com/r-egorov/otus_golang/hw07_file_copying/mycopy"
 	"github.com/stretchr/testify/require"
 )
 
@@ -58,7 +57,7 @@ func TestCopyApproval(t *testing.T) {
 			te := setUpTestEnv(t, inputText)
 			defer te.tearDown()
 
-			err := copy.Copy(te.sourceFile, te.destFile, tc.offset, tc.limit)
+			err := mycopy.Copy(te.sourceFile, te.destFile, tc.offset, tc.limit)
 
 			require.NoError(t, err)
 

@@ -1,14 +1,13 @@
-package copy_test
+package mycopy_test
 
 import (
 	"testing"
 
-	"github.com/r-egorov/otus_golang/hw07_file_copying/copy"
+	"github.com/r-egorov/otus_golang/hw07_file_copying/mycopy"
 	"github.com/stretchr/testify/require"
 )
 
 const (
-	tmpDir        = "tmp"
 	tmpSourcename = "tmp.txt"
 	tmpDestname   = "tmpdest.txt"
 	testText      = `Lorem ipsum dolor sit amet, consectetur adipiscing elit,
@@ -36,7 +35,7 @@ func TestCopySuccess(t *testing.T) {
 		defer te.tearDown()
 
 		expected := testText
-		err := copy.Copy(te.sourceFile, te.destFile, 0, 0)
+		err := mycopy.Copy(te.sourceFile, te.destFile, 0, 0)
 
 		require.NoError(t, err)
 
@@ -51,7 +50,7 @@ func TestCopySuccess(t *testing.T) {
 		te := setUpTestEnv(t, testText)
 		defer te.tearDown()
 
-		err := copy.Copy(te.sourceFile, te.destFile, offset, 0)
+		err := mycopy.Copy(te.sourceFile, te.destFile, offset, 0)
 
 		require.NoError(t, err)
 
@@ -66,7 +65,7 @@ func TestCopySuccess(t *testing.T) {
 		te := setUpTestEnv(t, testText)
 		defer te.tearDown()
 
-		err := copy.Copy(te.sourceFile, te.destFile, 0, limit)
+		err := mycopy.Copy(te.sourceFile, te.destFile, 0, limit)
 
 		require.NoError(t, err)
 
@@ -82,7 +81,7 @@ func TestCopySuccess(t *testing.T) {
 		te := setUpTestEnv(t, testText)
 		defer te.tearDown()
 
-		err := copy.Copy(te.sourceFile, te.destFile, offset, limit)
+		err := mycopy.Copy(te.sourceFile, te.destFile, offset, limit)
 
 		require.NoError(t, err)
 
@@ -98,8 +97,8 @@ func TestCopyFail(t *testing.T) {
 		tc := setUpTestEnv(t, testText)
 		defer tc.tearDown()
 
-		err := copy.Copy(tc.sourceFile, tc.destFile, offset, 0)
+		err := mycopy.Copy(tc.sourceFile, tc.destFile, offset, 0)
 
-		require.Error(t, err, copy.ErrOffsetExceedsFileSize)
+		require.Error(t, err, mycopy.ErrOffsetExceedsFileSize)
 	})
 }

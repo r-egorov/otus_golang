@@ -1,4 +1,4 @@
-package copy_test
+package mycopy_test
 
 import (
 	"os"
