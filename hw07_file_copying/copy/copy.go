@@ -5,13 +5,12 @@ import (
 	"io"
 	"os"
 
-	pb "github.com/cheggaaa/pb/v3"
+	"github.com/cheggaaa/pb/v3"
 )
 
-const defaultBufferSize = 1
+const defaultBufferSize = 512
 
 var (
-	ErrSourceFileNotFound    = errors.New("source file not found")
 	ErrUnsupportedFile       = errors.New("unsupported file")
 	ErrOffsetExceedsFileSize = errors.New("offset exceeds file size")
 )
@@ -20,28 +19,18 @@ type files struct {
 	sourceFd, destFd *os.File
 }
 
-func Copy(fromPath, toPath string, offset, limit int64) error {
-	// Prepare source FD
-	sourceFd, err := os.OpenFile(fromPath, os.O_RDONLY, 0755)
-	if err != nil {
-		return err
-	}
-
+func Copy(sourceFd, destFd *os.File, offset, limit int64) error {
 	lenToCopy, err := calculateLenToCopy(sourceFd, offset, limit)
 	if err != nil {
 		return err
 	}
 
-	// Prepare dest FD
-	destFd, err := os.Create(toPath)
-	if err != nil {
-		return err
-	}
+	bar := pb.Full.Start64(lenToCopy)
+	barReader := bar.NewProxyReader(sourceFd)
 
-	err = copyContent(sourceFd, destFd, lenToCopy)
-	if err != nil {
-		return err
-	}
+	copyContent(barReader, destFd, lenToCopy)
+
+	bar.Finish()
 	return nil
 }
 
@@ -61,7 +50,7 @@ func calculateLenToCopy(sourceFd *os.File, offset, limit int64) (int64, error) {
 
 	lenToCopy := fileStat.Size() - offset
 	if limit > 0 && lenToCopy > limit {
-		lenToCopy = limit + 1
+		lenToCopy = limit
 	}
 	return lenToCopy, nil
 }
@@ -70,20 +59,16 @@ func copyContent(source io.Reader, dest io.Writer, lenToCopy int64) error {
 	var totalReadBytes int64
 	bufferSize := int64(defaultBufferSize)
 
-	bar := pb.Full.Start64(lenToCopy)
-	barReader := bar.NewProxyReader(source)
-
 	for totalReadBytes < lenToCopy {
 		if bufferSize > lenToCopy-totalReadBytes {
 			bufferSize = lenToCopy - totalReadBytes
 		}
 
-		readBytes, err := io.CopyN(dest, barReader, bufferSize)
+		readBytes, err := io.CopyN(dest, source, bufferSize)
 		if err != nil {
 			return err
 		}
 		totalReadBytes += readBytes
 	}
-	bar.Finish()
 	return nil
 }

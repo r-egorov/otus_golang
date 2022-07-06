@@ -1,5 +1,7 @@
 github.com/VividCortex/ewma v1.1.1 h1:MnEK4VOv6n0RSY4vtRe3h11qjxL3+t0B8yOL8iMXdcM=
 github.com/VividCortex/ewma v1.1.1/go.mod h1:2Tkkvm3sRDVXaiyucHiACn4cqf7DpdyLvmxzcbUokwA=
+github.com/approvals/go-approval-tests v0.0.0-20220530063708-32d5677069bd h1:8j7sBEy0h6+Bvr0AeKHIHCsmzCzWGXAQweA7k+uiRYk=
+github.com/approvals/go-approval-tests v0.0.0-20220530063708-32d5677069bd/go.mod h1:PJOqSY8IofNv3heAD6k8E7EfFS6okiSS9bSAasaAUME=
 github.com/cheggaaa/pb/v3 v3.0.8 h1:bC8oemdChbke2FHIIGy9mn4DPJ2caZYQnfbRqwmdCoA=
 github.com/cheggaaa/pb/v3 v3.0.8/go.mod h1:UICbiLec/XO6Hw6k+BHEtHeQFzzBH4i2/qk/ow1EJTA=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

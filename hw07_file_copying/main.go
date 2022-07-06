@@ -1,15 +1,19 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"log"
+	"os"
 
 	"github.com/r-egorov/otus_golang/hw07_file_copying/copy"
 )
 
 var (
-	from, to      string
-	limit, offset int64
+	from, to              string
+	limit, offset         int64
+	ErrSourceFileNotFound = errors.New("source file not found")
+	ErrDestFileInvalid    = errors.New("can't create or open dest file")
 )
 
 func init() {
@@ -21,8 +25,22 @@ func init() {
 
 func main() {
 	flag.Parse()
-	err := copy.Copy(from, to, offset, limit)
+
+	// Prepare source FD
+	sourceFd, err := os.OpenFile(from, os.O_RDONLY, 0755)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("%s: %s", ErrSourceFileNotFound, from)
+		return
 	}
+	defer sourceFd.Close()
+
+	// Prepare dest FD
+	destFd, err := os.Create(to)
+	if err != nil {
+		log.Fatal(ErrDestFileInvalid)
+		return
+	}
+	defer destFd.Close()
+
+	copy.Copy(sourceFd, destFd, offset, limit)
 }

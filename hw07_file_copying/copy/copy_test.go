@@ -68,7 +68,7 @@ func TestCopySuccess(t *testing.T) {
 
 		defer tc.tearDown()
 
-		err := copy.Copy(tc.sourceFile.Name(), tc.destFile.Name(), 0, 0)
+		err := copy.Copy(tc.sourceFile, tc.destFile, 0, 0)
 
 		require.NoError(t, err)
 
@@ -88,7 +88,7 @@ func TestCopySuccess(t *testing.T) {
 		tc := setUpTestCase(testText, expected)
 		defer tc.tearDown()
 
-		err := copy.Copy(tc.sourceFile.Name(), tc.destFile.Name(), offset, 0)
+		err := copy.Copy(tc.sourceFile, tc.destFile, offset, 0)
 
 		require.NoError(t, err)
 
@@ -103,12 +103,12 @@ func TestCopySuccess(t *testing.T) {
 
 	t.Run("copies with limit", func(t *testing.T) {
 		limit := int64(50)
-		expected := testText[:limit+1]
+		expected := testText[:limit]
 
 		tc := setUpTestCase(testText, expected)
 		defer tc.tearDown()
 
-		err := copy.Copy(tc.sourceFile.Name(), tc.destFile.Name(), 0, limit)
+		err := copy.Copy(tc.sourceFile, tc.destFile, 0, limit)
 
 		require.NoError(t, err)
 
@@ -124,12 +124,12 @@ func TestCopySuccess(t *testing.T) {
 	t.Run("copies with offset and limit", func(t *testing.T) {
 		offset := int64(50)
 		limit := int64(50)
-		expected := testText[offset : offset+limit+1]
+		expected := testText[offset : offset+limit]
 
 		tc := setUpTestCase(testText, expected)
 		defer tc.tearDown()
 
-		err := copy.Copy(tc.sourceFile.Name(), tc.destFile.Name(), offset, limit)
+		err := copy.Copy(tc.sourceFile, tc.destFile, offset, limit)
 
 		require.NoError(t, err)
 
@@ -144,21 +144,13 @@ func TestCopySuccess(t *testing.T) {
 }
 
 func TestCopyFail(t *testing.T) {
-	t.Run("no source file", func(t *testing.T) {
-		tc := setUpTestCase(testText, "")
-		defer tc.tearDown()
-
-		err := copy.Copy("invalidpath", tc.destFile.Name(), 0, 0)
-		require.Error(t, err, copy.ErrSourceFileNotFound)
-	})
-
 	t.Run("offset is greater than the source file length", func(t *testing.T) {
 		var offset int64 = 9999999
 
 		tc := setUpTestCase(testText, "")
 		defer tc.tearDown()
 
-		err := copy.Copy(tc.sourceFile.Name(), tc.destFile.Name(), offset, 0)
+		err := copy.Copy(tc.sourceFile, tc.destFile, offset, 0)
 
 		require.Error(t, err, copy.ErrOffsetExceedsFileSize)
 	})
