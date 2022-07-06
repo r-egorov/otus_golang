@@ -4,9 +4,11 @@ import (
 	"errors"
 	"io"
 	"os"
+
+	pb "github.com/cheggaaa/pb/v3"
 )
 
-const defaultBufferSize = 512
+const defaultBufferSize = 1
 
 var (
 	ErrSourceFileNotFound    = errors.New("source file not found")
@@ -68,16 +70,20 @@ func copyContent(source io.Reader, dest io.Writer, lenToCopy int64) error {
 	var totalReadBytes int64
 	bufferSize := int64(defaultBufferSize)
 
+	bar := pb.Full.Start64(lenToCopy)
+	barReader := bar.NewProxyReader(source)
+
 	for totalReadBytes < lenToCopy {
 		if bufferSize > lenToCopy-totalReadBytes {
 			bufferSize = lenToCopy - totalReadBytes
 		}
 
-		readBytes, err := io.CopyN(dest, source, bufferSize)
+		readBytes, err := io.CopyN(dest, barReader, bufferSize)
 		if err != nil {
 			return err
 		}
 		totalReadBytes += readBytes
 	}
+	bar.Finish()
 	return nil
 }
