@@ -2,6 +2,9 @@ package main
 
 import (
 	"flag"
+	"log"
+
+	"github.com/r-egorov/otus_golang/hw07_file_copying/copy"
 )
 
 var (
@@ -18,5 +21,8 @@ func init() {
 
 func main() {
 	flag.Parse()
-	// Place your code here.
+	err := copy.Copy(from, to, offset, limit)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
