@@ -3,7 +3,7 @@ package main
 import (
 	"errors"
 	"flag"
-	"log"
+	"fmt"
 	"os"
 
 	"github.com/r-egorov/otus_golang/hw07_file_copying/copy"
@@ -29,7 +29,7 @@ func main() {
 	// Prepare source FD
 	sourceFd, err := os.OpenFile(from, os.O_RDONLY, 0755)
 	if err != nil {
-		log.Fatalf("%s: %s", ErrSourceFileNotFound, from)
+		fmt.Printf("Error: %s: %s\n", ErrSourceFileNotFound, from)
 		return
 	}
 	defer sourceFd.Close()
@@ -37,10 +37,13 @@ func main() {
 	// Prepare dest FD
 	destFd, err := os.Create(to)
 	if err != nil {
-		log.Fatal(ErrDestFileInvalid)
+		fmt.Printf("Error: %s: %s", ErrDestFileInvalid, to)
 		return
 	}
 	defer destFd.Close()
 
-	copy.Copy(sourceFd, destFd, offset, limit)
+	err = copy.Copy(sourceFd, destFd, offset, limit)
+	if err != nil {
+		fmt.Printf("Error: %s\n", err)
+	}
 }
