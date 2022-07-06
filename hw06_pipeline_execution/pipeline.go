@@ -16,7 +16,8 @@ func ExecutePipeline(in In, done In, stages ...Stage) Out {
 	return outPipeline
 }
 
-// Creates a `dest` channel, where redirects values from `source` to,
+// redirectInputToFirstStage сreates a `dest` channel,
+// where redirects values from `source` to,
 // stops if `done` is closed, closes `dest` when done.
 func redirectInputToFirstStage(source In, done In) In {
 	dest := make(Bi)
@@ -35,8 +36,7 @@ func redirectInputToFirstStage(source In, done In) In {
 	return dest
 }
 
-// Launches all the stages,
-// takes the input channel of the first stage as a parameter,
+// launchStages takes the input channel of the first stage as a parameter,
 // returns the output channel of the last stage.
 func launchStages(inStage In, stages []Stage) Out {
 	var outLastStage Out
@@ -47,7 +47,7 @@ func launchStages(inStage In, stages []Stage) Out {
 	return outLastStage
 }
 
-// Redirects results to the pipeline's output channel,
+// redirectOutputFromLastStage to pipeline's result channel,
 // stops if `done` is closed,
 // closes pipeline's out when done.
 func redirectOutputFromLastStage(outLastStage In, done In) Out {
