@@ -1,8 +1,6 @@
 package copy_test
 
 import (
-	"log"
-	"os"
 	"testing"
 
 	"github.com/r-egorov/otus_golang/hw07_file_copying/copy"
@@ -32,93 +30,48 @@ const (
 					pharetra. Posuere sollicitudin aliquam ultrices sagittis orci a.`
 )
 
-type testCase struct {
-	sourceFile, destFile     *os.File
-	sourceText, expectedText string
-}
-
-func (t *testCase) tearDown() {
-	os.Remove(t.sourceFile.Name())
-	os.Remove(t.destFile.Name())
-}
-
-func setUpTestCase(sourceText, expectedText string) testCase {
-	tmpSourceFile, err := os.CreateTemp("", tmpSourcename)
-	if err != nil {
-		log.Fatal(err)
-	}
-	tmpSourceFile.Write([]byte(sourceText))
-
-	tmpDestFile, err := os.CreateTemp("", tmpDestname)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return testCase{
-		sourceFile:   tmpSourceFile,
-		destFile:     tmpDestFile,
-		sourceText:   sourceText,
-		expectedText: expectedText,
-	}
-}
-
 func TestCopySuccess(t *testing.T) {
 	t.Run("copies from one file to another", func(t *testing.T) {
-		tc := setUpTestCase(testText, testText)
+		te := setUpTestEnv(t, testText)
+		defer te.tearDown()
 
-		defer tc.tearDown()
-
-		err := copy.Copy(tc.sourceFile, tc.destFile, 0, 0)
+		expected := testText
+		err := copy.Copy(te.sourceFile, te.destFile, 0, 0)
 
 		require.NoError(t, err)
 
-		body, err := os.ReadFile(tc.destFile.Name())
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		got := string(body)
-		require.Equal(t, tc.expectedText, got)
+		got := getFileContent(t, te.destFile.Name())
+		require.Equal(t, expected, got)
 	})
 
 	t.Run("copies with offset", func(t *testing.T) {
 		offset := int64(50)
 		expected := testText[offset:]
 
-		tc := setUpTestCase(testText, expected)
-		defer tc.tearDown()
+		te := setUpTestEnv(t, testText)
+		defer te.tearDown()
 
-		err := copy.Copy(tc.sourceFile, tc.destFile, offset, 0)
+		err := copy.Copy(te.sourceFile, te.destFile, offset, 0)
 
 		require.NoError(t, err)
 
-		body, err := os.ReadFile(tc.destFile.Name())
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		got := string(body)
-		require.Equal(t, tc.expectedText, got)
+		got := getFileContent(t, te.destFile.Name())
+		require.Equal(t, expected, got)
 	})
 
 	t.Run("copies with limit", func(t *testing.T) {
 		limit := int64(50)
 		expected := testText[:limit]
 
-		tc := setUpTestCase(testText, expected)
-		defer tc.tearDown()
+		te := setUpTestEnv(t, testText)
+		defer te.tearDown()
 
-		err := copy.Copy(tc.sourceFile, tc.destFile, 0, limit)
+		err := copy.Copy(te.sourceFile, te.destFile, 0, limit)
 
 		require.NoError(t, err)
 
-		body, err := os.ReadFile(tc.destFile.Name())
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		got := string(body)
-		require.Equal(t, tc.expectedText, got)
+		got := getFileContent(t, te.destFile.Name())
+		require.Equal(t, expected, got)
 	})
 
 	t.Run("copies with offset and limit", func(t *testing.T) {
@@ -126,20 +79,15 @@ func TestCopySuccess(t *testing.T) {
 		limit := int64(50)
 		expected := testText[offset : offset+limit]
 
-		tc := setUpTestCase(testText, expected)
-		defer tc.tearDown()
+		te := setUpTestEnv(t, testText)
+		defer te.tearDown()
 
-		err := copy.Copy(tc.sourceFile, tc.destFile, offset, limit)
+		err := copy.Copy(te.sourceFile, te.destFile, offset, limit)
 
 		require.NoError(t, err)
 
-		body, err := os.ReadFile(tc.destFile.Name())
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		got := string(body)
-		require.Equal(t, tc.expectedText, got)
+		got := getFileContent(t, te.destFile.Name())
+		require.Equal(t, expected, got)
 	})
 }
 
@@ -147,7 +95,7 @@ func TestCopyFail(t *testing.T) {
 	t.Run("offset is greater than the source file length", func(t *testing.T) {
 		var offset int64 = 9999999
 
-		tc := setUpTestCase(testText, "")
+		tc := setUpTestEnv(t, testText)
 		defer tc.tearDown()
 
 		err := copy.Copy(tc.sourceFile, tc.destFile, offset, 0)

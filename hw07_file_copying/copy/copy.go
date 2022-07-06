@@ -5,10 +5,10 @@ import (
 	"io"
 	"os"
 
-	"github.com/cheggaaa/pb/v3"
+	"github.com/r-egorov/otus_golang/hw07_file_copying/progress_bar"
 )
 
-const defaultBufferSize = 512
+const defaultBufferSize = 4096
 
 var (
 	ErrUnsupportedFile       = errors.New("unsupported file")
@@ -19,15 +19,21 @@ type files struct {
 	sourceFd, destFd *os.File
 }
 
+// Copy takes source and destination file descriptors,
+// copies at most `limit` bytes from source to dest,
+// starting from the `offset` byte.
+// In case `limit` is zero, copies the content till the EOF
+// Outputs the progress bar while copying.
 func Copy(sourceFd, destFd *os.File, offset, limit int64) error {
 	lenToCopy, err := calculateLenToCopy(sourceFd, offset, limit)
 	if err != nil {
 		return err
 	}
 
-	bar := pb.Full.Start64(lenToCopy)
+	bar := progress_bar.NewBar(lenToCopy)
 	barReader := bar.NewProxyReader(sourceFd)
 
+	bar.Start()
 	err = copyContent(barReader, destFd, lenToCopy)
 	if err != nil {
 		return err

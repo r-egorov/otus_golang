@@ -1,21 +1,22 @@
 package copy_test
 
 import (
-	"os"
+	"path"
 	"testing"
 
-	approvals "github.com/approvals/go-approval-tests"
 	"github.com/r-egorov/otus_golang/hw07_file_copying/copy"
+
+	approvals "github.com/approvals/go-approval-tests"
 	"github.com/stretchr/testify/require"
 )
 
-const (
-	inputFolder   = "../testdata"
-	inputFilePath = "../testdata/input.txt"
+var (
+	inputFilePath = path.Join("..", "testdata", "input.txt")
+	inputFolder   = path.Dir(inputFilePath)
 )
 
 func TestCopyApproval(t *testing.T) {
-	approvalCases := []struct {
+	testCases := []struct {
 		name          string
 		offset, limit int64
 	}{
@@ -50,31 +51,21 @@ func TestCopyApproval(t *testing.T) {
 			limit:  1000,
 		},
 	}
-	for _, ac := range approvalCases {
-		t.Run(ac.name, func(t *testing.T) {
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
 			inputText := getFileContent(t, inputFilePath)
-			expected := inputText
 
-			tc := setUpTestCase(inputText, expected)
-			defer tc.tearDown()
+			te := setUpTestEnv(t, inputText)
+			defer te.tearDown()
 
-			err := copy.Copy(tc.sourceFile, tc.destFile, ac.offset, ac.limit)
+			err := copy.Copy(te.sourceFile, te.destFile, tc.offset, tc.limit)
 
 			require.NoError(t, err)
 
-			gotText := getFileContent(t, tc.destFile.Name())
+			gotText := getFileContent(t, te.destFile.Name())
 
 			approvals.UseFolder(inputFolder)
 			approvals.VerifyString(t, gotText)
 		})
 	}
-}
-
-func getFileContent(t *testing.T, filePath string) string {
-	t.Helper()
-	f, err := os.ReadFile(filePath)
-	if err != nil {
-		t.Fatal("can't read input")
-	}
-	return string(f)
 }
