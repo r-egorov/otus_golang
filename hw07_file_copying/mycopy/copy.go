@@ -4,12 +4,11 @@ import (
 	"errors"
 	"io"
 	"os"
-	"time"
 
 	"github.com/r-egorov/otus_golang/hw07_file_copying/progressbar"
 )
 
-const defaultBufferSize = 1
+const defaultBufferSize = 4096
 
 var (
 	ErrUnsupportedFile       = errors.New("unsupported file")
@@ -76,7 +75,6 @@ func copyContent(source io.Reader, dest io.Writer, lenToCopy int64) error {
 			return err
 		}
 		totalReadBytes += readBytes
-		time.Sleep(time.Millisecond * 1)
 	}
 	return nil
 }

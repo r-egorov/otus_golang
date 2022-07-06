@@ -55,7 +55,7 @@ func TestCopyApproval(t *testing.T) {
 			inputText := getFileContent(t, inputFilePath)
 
 			te := setUpTestEnv(t, inputText)
-			defer te.tearDown()
+			defer te.tearDown(t)
 
 			err := mycopy.Copy(te.sourceFile, te.destFile, tc.offset, tc.limit)
 

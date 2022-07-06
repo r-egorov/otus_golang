@@ -10,11 +10,24 @@ type testEnv struct {
 	sourceText           string
 }
 
-func (t *testEnv) tearDown() {
-	t.sourceFile.Close()
-	t.destFile.Close()
-	os.Remove(t.sourceFile.Name())
-	os.Remove(t.destFile.Name())
+func (te *testEnv) tearDown(t *testing.T) {
+	t.Helper()
+	err := te.sourceFile.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = te.destFile.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = os.Remove(te.sourceFile.Name())
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = os.Remove(te.destFile.Name())
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
 func setUpTestEnv(t *testing.T, sourceText string) testEnv {
@@ -23,7 +36,10 @@ func setUpTestEnv(t *testing.T, sourceText string) testEnv {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tmpSourceFile.Write([]byte(sourceText))
+	_, err = tmpSourceFile.Write([]byte(sourceText))
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	tmpDestFile, err := os.CreateTemp("", tmpDestname)
 	if err != nil {

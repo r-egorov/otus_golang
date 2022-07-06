@@ -32,7 +32,7 @@ const (
 func TestCopySuccess(t *testing.T) {
 	t.Run("copies from one file to another", func(t *testing.T) {
 		te := setUpTestEnv(t, testText)
-		defer te.tearDown()
+		defer te.tearDown(t)
 
 		expected := testText
 		err := mycopy.Copy(te.sourceFile, te.destFile, 0, 0)
@@ -48,7 +48,7 @@ func TestCopySuccess(t *testing.T) {
 		expected := testText[offset:]
 
 		te := setUpTestEnv(t, testText)
-		defer te.tearDown()
+		defer te.tearDown(t)
 
 		err := mycopy.Copy(te.sourceFile, te.destFile, offset, 0)
 
@@ -63,7 +63,7 @@ func TestCopySuccess(t *testing.T) {
 		expected := testText[:limit]
 
 		te := setUpTestEnv(t, testText)
-		defer te.tearDown()
+		defer te.tearDown(t)
 
 		err := mycopy.Copy(te.sourceFile, te.destFile, 0, limit)
 
@@ -79,7 +79,7 @@ func TestCopySuccess(t *testing.T) {
 		expected := testText[offset : offset+limit]
 
 		te := setUpTestEnv(t, testText)
-		defer te.tearDown()
+		defer te.tearDown(t)
 
 		err := mycopy.Copy(te.sourceFile, te.destFile, offset, limit)
 
@@ -95,7 +95,7 @@ func TestCopyFail(t *testing.T) {
 		var offset int64 = 9999999
 
 		tc := setUpTestEnv(t, testText)
-		defer tc.tearDown()
+		defer tc.tearDown(t)
 
 		err := mycopy.Copy(tc.sourceFile, tc.destFile, offset, 0)
 
