@@ -21,11 +21,11 @@ type Bar struct {
 // adds it to the `cur` and adjusts the `barString`.
 func (b *Bar) Progress(cur int64) {
 	b.cur += cur
-	b.percent = b.getPercent()
+	b.percent = b.GetPercent()
 	b.barString = strings.Repeat(b.char, int(b.percent)/(100/barWidth))
 }
 
-func (b *Bar) getPercent() int64 {
+func (b *Bar) GetPercent() int64 {
 	return int64((float32(b.cur) / float32(b.total)) * 100)
 }
 
@@ -44,16 +44,16 @@ func (b *Bar) Start() {
 				// We need to duplicate the `b.showProgress()` call
 				// because the goroutine does not manage to output
 				// when the limit is too small.
-				b.showProgress()
+				b.ShowProgress()
 				return
 			default:
-				b.showProgress()
+				b.ShowProgress()
 			}
 		}
 	}()
 }
 
-func (b *Bar) showProgress() {
+func (b *Bar) ShowProgress() {
 	fmt.Printf(
 		"\r[%-*s]%3d%% %8d/%d",
 		barWidth, b.barString, b.percent, b.cur, b.total,
