@@ -28,7 +28,10 @@ func Copy(sourceFd, destFd *os.File, offset, limit int64) error {
 	bar := pb.Full.Start64(lenToCopy)
 	barReader := bar.NewProxyReader(sourceFd)
 
-	copyContent(barReader, destFd, lenToCopy)
+	err = copyContent(barReader, destFd, lenToCopy)
+	if err != nil {
+		return err
+	}
 
 	bar.Finish()
 	return nil
@@ -43,6 +46,7 @@ func calculateLenToCopy(sourceFd *os.File, offset, limit int64) (int64, error) {
 	if offset > fileStat.Size() {
 		return 0, ErrOffsetExceedsFileSize
 	}
+
 	offset, err = sourceFd.Seek(offset, 0)
 	if err != nil {
 		return 0, err
