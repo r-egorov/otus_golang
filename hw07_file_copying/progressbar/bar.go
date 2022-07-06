@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"sync"
 )
 
 const (
@@ -15,11 +16,14 @@ type Bar struct {
 	percent, cur, total int64
 	barString, char     string
 	finishChan          chan struct{}
+	mu                  sync.RWMutex
 }
 
 // Progress takes a current value of an operation,
 // adds it to the `cur` and adjusts the `barString`.
 func (b *Bar) Progress(cur int64) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
 	b.cur += cur
 	b.percent = b.GetPercent()
 	b.barString = strings.Repeat(b.char, int(b.percent)/(100/barWidth))
@@ -54,6 +58,8 @@ func (b *Bar) Start() {
 }
 
 func (b *Bar) ShowProgress() {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
 	fmt.Printf(
 		"\r[%-*s]%3d%% %8d/%d",
 		barWidth, b.barString, b.percent, b.cur, b.total,
@@ -74,5 +80,6 @@ func NewBar(total int64) *Bar {
 		barString:  "",
 		char:       "#",
 		finishChan: finishChan,
+		mu:         sync.RWMutex{},
 	}
 }
