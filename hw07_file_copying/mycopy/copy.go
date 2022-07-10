@@ -48,6 +48,7 @@ func calculateLenToCopy(sourceFd *os.File, offset, limit int64) (int64, error) {
 	if !fileStat.Mode().IsRegular() {
 		return 0, ErrUnsupportedFile
 	}
+
 	if offset > fileStat.Size() {
 		return 0, ErrOffsetExceedsFileSize
 	}
