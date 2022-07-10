@@ -104,7 +104,6 @@ func TestCopyFail(t *testing.T) {
 	})
 
 	t.Run("does not copy from /dev/urandom", func(t *testing.T) {
-		t.Skip() // TODO: Make this test pass
 		te := setUpTestEnv(t, testText)
 		defer te.tearDown(t)
 
