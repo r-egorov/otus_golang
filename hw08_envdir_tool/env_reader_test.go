@@ -30,6 +30,21 @@ func TestReadDir(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, expected, got)
 	})
+
+	t.Run("filenames can't include `=`", func(t *testing.T) {
+		initialEnv := map[string]string{
+			"HELLO":    "hello",
+			"INVALID=": "invalid",
+		}
+		te := NewTestEnv(t)
+		defer te.tearDown(t)
+
+		te.addEnvVarFiles(t, initialEnv)
+
+		_, err := ReadDir(te.tmpDirPath)
+
+		require.Error(t, err, ErrAssignationSignInFilename)
+	})
 }
 
 type TestEnv struct {
@@ -91,10 +106,10 @@ func expectedEnv(env map[string]string) Environment {
 				NeedRemove: true,
 			}
 		} else {
+			value = strings.Replace(value, "\x00", "\n", -1)
 			splitted := strings.Split(value, "\n")
 			firstLine := splitted[0]
 			firstLine = strings.TrimRight(firstLine, " \n\t\v\f\r")
-			firstLine = strings.Replace(firstLine, "\x00", "\n", -1)
 			res[key] = EnvValue{
 				Value:      firstLine,
 				NeedRemove: false,
