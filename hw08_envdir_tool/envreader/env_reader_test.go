@@ -1,4 +1,4 @@
-package main
+package envreader_test
 
 import (
 	"io/ioutil"
@@ -6,6 +6,7 @@ import (
 	"path"
 	"testing"
 
+	"github.com/r-egorov/otus_golang/hw08_envdir_tool/envreader"
 	"github.com/stretchr/testify/require"
 )
 
@@ -23,24 +24,24 @@ func TestReadDir(t *testing.T) {
 
 		te.addEnvVarFiles(t, initialEnv)
 
-		expected := Environment{
-			"HELLO": EnvValue{
+		expected := envreader.Environment{
+			"HELLO": envreader.EnvValue{
 				Value: "hello", NeedRemove: false,
 			},
-			"UNSET": EnvValue{
+			"UNSET": envreader.EnvValue{
 				Value: "", NeedRemove: true,
 			},
-			"EMPTYLINE": EnvValue{
+			"EMPTYLINE": envreader.EnvValue{
 				Value: "", NeedRemove: false,
 			},
-			"SPACES": EnvValue{
+			"SPACES": envreader.EnvValue{
 				Value: "spaces", NeedRemove: false,
 			},
-			"ZEROTERM": EnvValue{
+			"ZEROTERM": envreader.EnvValue{
 				Value: "zeroterminated\nwith new line", NeedRemove: false,
 			},
 		}
-		got, err := ReadDir(te.tmpDirPath)
+		got, err := envreader.ReadDir(te.tmpDirPath)
 
 		require.NoError(t, err)
 		require.Equal(t, expected, got)
@@ -56,9 +57,9 @@ func TestReadDir(t *testing.T) {
 
 		te.addEnvVarFiles(t, initialEnv)
 
-		_, err := ReadDir(te.tmpDirPath)
+		_, err := envreader.ReadDir(te.tmpDirPath)
 
-		require.Error(t, err, ErrAssignationSignInFilename)
+		require.Error(t, err, envreader.ErrAssignationSignInFilename)
 	})
 }
 

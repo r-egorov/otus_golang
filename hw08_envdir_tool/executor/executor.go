@@ -1,7 +1,8 @@
-package main
+package executor
 
 import (
 	"errors"
+	"github.com/r-egorov/otus_golang/hw08_envdir_tool/envreader"
 	"io"
 	"log"
 	"os"
@@ -12,7 +13,7 @@ const failCode = -1
 
 // RunCmd runs a command + arguments (cmd) with environment variables from env.
 func RunCmd(
-	cmd []string, env Environment,
+	cmd []string, env envreader.Environment,
 	stdout, stderr io.Writer, stdin io.Reader,
 ) (returnCode int) {
 	var command *exec.Cmd
@@ -48,7 +49,7 @@ func RunCmd(
 	return command.ProcessState.ExitCode()
 }
 
-func prepareEnvironment(env Environment) ([]string, error) {
+func prepareEnvironment(env envreader.Environment) ([]string, error) {
 	for key, value := range env {
 		if value.NeedRemove {
 			err := os.Unsetenv(key)

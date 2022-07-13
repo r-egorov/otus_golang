@@ -1,7 +1,9 @@
-package main
+package executor_test
 
 import (
 	"bytes"
+	"github.com/r-egorov/otus_golang/hw08_envdir_tool/envreader"
+	"github.com/r-egorov/otus_golang/hw08_envdir_tool/executor"
 	"os"
 	"path"
 	"testing"
@@ -10,10 +12,10 @@ import (
 )
 
 var (
-	catTestScriptPath    = path.Join(".", "testdata", "cat.sh")
-	stderrTestScriptPath = path.Join(".", "testdata", "send_to_stderr.sh")
-	exitTestScriptPath   = path.Join(".", "testdata", "exitcode.sh")
-	echoTestScriptPath   = path.Join(".", "testdata", "echo.sh")
+	catTestScriptPath    = path.Join("..", "testdata", "cat.sh")
+	stderrTestScriptPath = path.Join("..", "testdata", "send_to_stderr.sh")
+	exitTestScriptPath   = path.Join("..", "testdata", "exitcode.sh")
+	echoTestScriptPath   = path.Join("..", "testdata", "echo.sh")
 )
 
 const exitCodeInTestFile = 42
@@ -28,25 +30,25 @@ func TestRunCmd(t *testing.T) {
 		}
 		defer os.Unsetenv("ADDED")
 
-		env := Environment{
-			"BAR": EnvValue{
+		env := envreader.Environment{
+			"BAR": envreader.EnvValue{
 				"bar", false,
 			},
-			"EMPTY": EnvValue{
+			"EMPTY": envreader.EnvValue{
 				"", false,
 			},
-			"FOO": EnvValue{
+			"FOO": envreader.EnvValue{
 				"   foo\nwith new line", false,
 			},
-			"HELLO": EnvValue{
+			"HELLO": envreader.EnvValue{
 				`"hello"`, false,
 			},
-			"UNSET": EnvValue{
+			"UNSET": envreader.EnvValue{
 				"", true,
 			},
 		}
 		cmd := []string{"bash", echoTestScriptPath, "arg1=1", "arg2=2"}
-		exitCode := RunCmd(cmd, env, out, nil, nil)
+		exitCode := executor.RunCmd(cmd, env, out, nil, nil)
 
 		got := out.String()
 		expected := `HELLO is ("hello")
@@ -68,7 +70,7 @@ arguments are arg1=1 arg2=2
 		out := &bytes.Buffer{}
 
 		cmd := []string{"bash", catTestScriptPath}
-		exitCode := RunCmd(cmd, nil, out, nil, in)
+		exitCode := executor.RunCmd(cmd, nil, out, nil, in)
 
 		got := out.String()
 		expected := toSendToIn
@@ -79,7 +81,7 @@ arguments are arg1=1 arg2=2
 
 	t.Run("exit code equals cmd's exit code", func(t *testing.T) {
 		cmd := []string{"bash", exitTestScriptPath}
-		exitCode := RunCmd(cmd, nil, nil, nil, nil)
+		exitCode := executor.RunCmd(cmd, nil, nil, nil, nil)
 
 		require.Equal(t, exitCodeInTestFile, exitCode)
 	})
@@ -90,7 +92,7 @@ arguments are arg1=1 arg2=2
 		err := &bytes.Buffer{}
 
 		cmd := []string{"bash", stderrTestScriptPath}
-		exitCode := RunCmd(cmd, nil, nil, err, in)
+		exitCode := executor.RunCmd(cmd, nil, nil, err, in)
 
 		got := err.String()
 		expected := toSendToIn
