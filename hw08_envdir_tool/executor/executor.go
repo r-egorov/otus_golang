@@ -52,16 +52,14 @@ func RunCmd(
 
 func prepareEnvironment(env envreader.Environment) ([]string, error) {
 	for key, value := range env {
+		var err error
 		if value.NeedRemove {
-			err := os.Unsetenv(key)
-			if err != nil {
-				return nil, err
-			}
+			err = os.Unsetenv(key)
 		} else {
-			err := os.Setenv(key, value.Value)
-			if err != nil {
-				return nil, err
-			}
+			err = os.Setenv(key, value.Value)
+		}
+		if err != nil {
+			return nil, err
 		}
 	}
 	return os.Environ(), nil
