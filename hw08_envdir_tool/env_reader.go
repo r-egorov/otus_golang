@@ -59,16 +59,14 @@ func createEnvValueFromFile(dir string, file os.DirEntry) (EnvValue, error) {
 	}
 
 	preparedValue := ""
-	needRemove := false
-
-	if fileInfo.Size() == 0 {
-		needRemove = true
-	} else {
+	needRemove := true
+	if fileInfo.Size() > 0 {
 		content, err := os.ReadFile(path.Join(dir, fileInfo.Name()))
 		if err != nil {
 			return EnvValue{}, err
 		}
 		preparedValue = prepareValue(string(content))
+		needRemove = false
 	}
 
 	return EnvValue{
@@ -78,10 +76,10 @@ func createEnvValueFromFile(dir string, file os.DirEntry) (EnvValue, error) {
 }
 
 func prepareValue(content string) string {
-	content = strings.Replace(content, zeroTerminator, "\n", -1)
 	splitted := strings.Split(content, "\n")
 	firstLine := splitted[0]
 	firstLine = strings.TrimRight(firstLine, whiteSpaces)
+	firstLine = strings.Replace(firstLine, zeroTerminator, "\n", -1)
 
 	return firstLine
 }

@@ -4,7 +4,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -17,14 +16,30 @@ func TestReadDir(t *testing.T) {
 			"UNSET":     "",
 			"EMPTYLINE": "\nsecondline",
 			"SPACES":    "spaces \t\f ",
-			"ZEROTERM":  "zeroterminated\x00",
+			"ZEROTERM":  "zeroterminated\x00with new line",
 		}
 		te := NewTestEnv(t)
 		defer te.tearDown(t)
 
 		te.addEnvVarFiles(t, initialEnv)
 
-		expected := expectedEnv(initialEnv)
+		expected := Environment{
+			"HELLO": EnvValue{
+				Value: "hello", NeedRemove: false,
+			},
+			"UNSET": EnvValue{
+				Value: "", NeedRemove: true,
+			},
+			"EMPTYLINE": EnvValue{
+				Value: "", NeedRemove: false,
+			},
+			"SPACES": EnvValue{
+				Value: "spaces", NeedRemove: false,
+			},
+			"ZEROTERM": EnvValue{
+				Value: "zeroterminated\nwith new line", NeedRemove: false,
+			},
+		}
 		got, err := ReadDir(te.tmpDirPath)
 
 		require.NoError(t, err)
@@ -95,26 +110,4 @@ func (te *TestEnv) addEnvVarFiles(t *testing.T, envVars map[string]string) {
 	for key, value := range envVars {
 		te.addEnvVarFile(t, key, value)
 	}
-}
-
-func expectedEnv(env map[string]string) Environment {
-	res := make(Environment)
-	for key, value := range env {
-		if len(value) == 0 {
-			res[key] = EnvValue{
-				Value:      value,
-				NeedRemove: true,
-			}
-		} else {
-			value = strings.Replace(value, "\x00", "\n", -1)
-			splitted := strings.Split(value, "\n")
-			firstLine := splitted[0]
-			firstLine = strings.TrimRight(firstLine, " \n\t\v\f\r")
-			res[key] = EnvValue{
-				Value:      firstLine,
-				NeedRemove: false,
-			}
-		}
-	}
-	return res
 }
