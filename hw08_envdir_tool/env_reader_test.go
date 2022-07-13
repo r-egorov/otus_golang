@@ -93,6 +93,9 @@ func (te *TestEnv) addEnvVarFile(t *testing.T, key, value string) {
 
 	filePath := path.Join(te.tmpDirPath, key)
 	file, err := os.Create(filePath)
+	if err != nil {
+		t.Fatalf("Error: %v", err)
+	}
 	defer file.Close()
 
 	if err != nil {

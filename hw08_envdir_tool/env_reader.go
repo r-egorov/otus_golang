@@ -12,9 +12,7 @@ const (
 	zeroTerminator = "\x00"
 )
 
-var (
-	ErrAssignationSignInFilename = errors.New("filename can't contain assignation sign")
-)
+var ErrAssignationSignInFilename = errors.New("filename can't contain assignation sign")
 
 type Environment map[string]EnvValue
 
@@ -79,7 +77,7 @@ func prepareValue(content string) string {
 	splitted := strings.Split(content, "\n")
 	firstLine := splitted[0]
 	firstLine = strings.TrimRight(firstLine, whiteSpaces)
-	firstLine = strings.Replace(firstLine, zeroTerminator, "\n", -1)
+	firstLine = strings.ReplaceAll(firstLine, zeroTerminator, "\n")
 
 	return firstLine
 }

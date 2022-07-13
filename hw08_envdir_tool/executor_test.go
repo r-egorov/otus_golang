@@ -9,10 +9,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var echoTestScriptPath = path.Join(".", "testdata", "echo.sh")
-var catTestScriptPath = path.Join(".", "testdata", "cat.sh")
-var stderrTestScriptPath = path.Join(".", "testdata", "send_to_stderr.sh")
-var exitTestScriptPath = path.Join(".", "testdata", "exitcode.sh")
+var (
+	catTestScriptPath    = path.Join(".", "testdata", "cat.sh")
+	stderrTestScriptPath = path.Join(".", "testdata", "send_to_stderr.sh")
+	exitTestScriptPath   = path.Join(".", "testdata", "exitcode.sh")
+	echoTestScriptPath   = path.Join(".", "testdata", "echo.sh")
+)
 
 const exitCodeInTestFile = 42
 
@@ -83,7 +85,6 @@ arguments are arg1=1 arg2=2
 	})
 
 	t.Run("it redirects the stderr", func(t *testing.T) {
-
 		toSendToIn := "This will be redirected to ERR"
 		in := bytes.NewBuffer([]byte(toSendToIn))
 		err := &bytes.Buffer{}

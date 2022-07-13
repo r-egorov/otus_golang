@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"io"
 	"log"
 	"os"
@@ -16,17 +17,19 @@ func RunCmd(
 ) (returnCode int) {
 	var command *exec.Cmd
 
-	if len(cmd) < 1 {
-		return 125 // FIXME
-	} else if len(cmd) == 1 {
-		command = exec.Command(cmd[0])
-	} else {
-		command = exec.Command(cmd[0], cmd[1:]...)
+	switch {
+	case len(cmd) == 1:
+		command = exec.Command(cmd[0]) //nolint:gosec
+	case len(cmd) > 1:
+		command = exec.Command(cmd[0], cmd[1:]...) //nolint:gosec
+	default:
+		return failCode
 	}
 
 	command.Stderr = stderr
 	command.Stdin = stdin
 	command.Stdout = stdout
+
 	preparedEnv, err := prepareEnvironment(env)
 	if err != nil {
 		log.Fatalf("Error: %v", err)
@@ -36,7 +39,8 @@ func RunCmd(
 	command.Env = preparedEnv
 	err = command.Run()
 	if err != nil {
-		if _, ok := err.(*exec.ExitError); !ok {
+		var exitError *exec.ExitError
+		if !errors.As(err, &exitError) {
 			return failCode
 		}
 	}
