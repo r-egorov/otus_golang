@@ -2,11 +2,12 @@ package executor
 
 import (
 	"errors"
-	"github.com/r-egorov/otus_golang/hw08_envdir_tool/envreader"
 	"io"
 	"log"
 	"os"
 	"os/exec"
+
+	"github.com/r-egorov/otus_golang/hw08_envdir_tool/envreader"
 )
 
 const failCode = -1

@@ -1,10 +1,11 @@
 package main
 
 import (
-	"github.com/r-egorov/otus_golang/hw08_envdir_tool/envreader"
-	"github.com/r-egorov/otus_golang/hw08_envdir_tool/executor"
 	"log"
 	"os"
+
+	"github.com/r-egorov/otus_golang/hw08_envdir_tool/envreader"
+	"github.com/r-egorov/otus_golang/hw08_envdir_tool/executor"
 )
 
 const usageDirections = "Usage: <go-envdir> <envdirectory> <cmd> [arg...]"

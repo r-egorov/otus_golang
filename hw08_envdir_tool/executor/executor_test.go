@@ -2,12 +2,12 @@ package executor_test
 
 import (
 	"bytes"
-	"github.com/r-egorov/otus_golang/hw08_envdir_tool/envreader"
-	"github.com/r-egorov/otus_golang/hw08_envdir_tool/executor"
 	"os"
 	"path"
 	"testing"
 
+	"github.com/r-egorov/otus_golang/hw08_envdir_tool/envreader"
+	"github.com/r-egorov/otus_golang/hw08_envdir_tool/executor"
 	"github.com/stretchr/testify/require"
 )
 
@@ -32,19 +32,19 @@ func TestRunCmd(t *testing.T) {
 
 		env := envreader.Environment{
 			"BAR": envreader.EnvValue{
-				"bar", false,
+				Value: "bar", NeedRemove: false,
 			},
 			"EMPTY": envreader.EnvValue{
-				"", false,
+				Value: "", NeedRemove: false,
 			},
 			"FOO": envreader.EnvValue{
-				"   foo\nwith new line", false,
+				Value: "   foo\nwith new line", NeedRemove: false,
 			},
 			"HELLO": envreader.EnvValue{
-				`"hello"`, false,
+				Value: `"hello"`, NeedRemove: false,
 			},
 			"UNSET": envreader.EnvValue{
-				"", true,
+				Value: "", NeedRemove: true,
 			},
 		}
 		cmd := []string{"bash", echoTestScriptPath, "arg1=1", "arg2=2"}
