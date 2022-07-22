@@ -1,7 +1,6 @@
 package envreader_test
 
 import (
-	"io/ioutil"
 	"os"
 	"path"
 	"testing"
@@ -70,7 +69,7 @@ type TestEnv struct {
 func NewTestEnv(t *testing.T) TestEnv {
 	t.Helper()
 
-	tmpDirPath, err := ioutil.TempDir("", "env_directory")
+	tmpDirPath, err := os.MkdirTemp("", "env_directory")
 	if err != nil {
 		t.Fatalf("can't create tempdir: %v", err)
 	}
