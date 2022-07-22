@@ -4,8 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"regexp"
-	"strconv"
 	"strings"
 )
 
@@ -72,155 +70,58 @@ func Validate(v interface{}) error {
 }
 
 func validateField(field reflect.StructField, fieldValue reflect.Value) *ValidationError {
-	tag, needToBeValidated := field.Tag.Lookup("validate")
+	rawTag, needToBeValidated := field.Tag.Lookup("validate")
 	if !needToBeValidated {
 		return nil
 	}
 
-	var err error
-	switch field.Type.Kind() {
+	tags, err := parseTags(rawTag)
+	if err != nil {
+		return &ValidationError{
+			Field: field.Name,
+			Err:   err,
+		}
+	}
+
+	switch field.Type.Kind() { //nolint:exhaustive
 	case reflect.Slice:
-		err = processSlice(field, tag)
+		err = processSlice(field, tags)
 	case reflect.String:
-		err = processString(fieldValue.String(), tag)
+		err = processString(fieldValue.String(), tags)
 	case reflect.Int:
-		err = processInt(int(fieldValue.Int()), tag)
+		err = processInt(int(fieldValue.Int()), tags)
 	default:
 		err = ErrTypeUnsupported
 	}
 
 	if err != nil {
-		validationErr := &ValidationError{
+		return &ValidationError{
 			Field: field.Name,
 			Err:   err,
 		}
-		return validationErr
 	}
 	return nil
 }
 
-func processSlice(sl reflect.StructField, tag string) error {
+func parseTags(rawTags string) (map[string]string, error) {
+	tags := make(map[string]string)
+	tagSplitted := strings.SplitN(rawTags, ":", 2)
+	if len(tagSplitted) != 2 {
+		return nil, ErrTagInvalid
+	}
+	tags[tagSplitted[0]] = tagSplitted[1]
+	return tags, nil
+}
+
+func processSlice(sl reflect.StructField, tags map[string]string) error {
 	elemType := sl.Type.Elem()
-	switch elemType.Kind() {
+	switch elemType.Kind() { //nolint:exhaustive
 	case reflect.String:
 		fmt.Println("slice of strings")
 	case reflect.Int:
 		fmt.Println("slice of ints")
 	default:
 		fmt.Println("slice not supported")
-	}
-	return nil
-}
-
-func processString(str string, tag string) error {
-	tagSplitted := strings.SplitN(tag, ":", 2)
-	if len(tagSplitted) != 2 {
-		return ErrTagInvalid
-	}
-	tagKey := tagSplitted[0]
-	tagValue := tagSplitted[1]
-
-	var err error
-	switch tagKey {
-	case "len":
-		expectedLen, atoiErr := strconv.Atoi(tagValue)
-		if atoiErr != nil {
-			return ErrTagInvalid
-		}
-		err = checkStringLen(str, expectedLen)
-	case "in":
-		err = checkStringInSet(str, strings.Split(tagValue, ","))
-	case "regexp":
-		err = checkStringRegexplike(str, tagValue)
-	default:
-		err = ErrTagInvalid
-	}
-
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func checkStringLen(str string, expectedLen int) error {
-	if len([]rune(str)) != expectedLen {
-		return ErrStringLenInvalid
-	}
-	return nil
-}
-
-func checkStringInSet(str string, set []string) error {
-	if len(set) < 1 {
-		return ErrTagInvalid
-	}
-	for _, s := range set {
-		if str == s {
-			return nil
-		}
-	}
-	return ErrStringNotInSet
-}
-
-func checkStringRegexplike(str string, regexStr string) error {
-	regex, err := regexp.Compile(regexStr)
-	if err != nil {
-		return ErrTagInvalid
-	}
-
-	matched := regex.MatchString(str)
-	if !matched {
-		return ErrStringNotRegexplike
-	}
-	return nil
-}
-
-func processInt(fieldValue int, tag string) error {
-	tagSplitted := strings.SplitN(tag, ":", 2)
-	if len(tagSplitted) != 2 {
-		return ErrTagInvalid
-	}
-	tagKey := tagSplitted[0]
-	tagValue := tagSplitted[1]
-
-	var err error
-	switch tagKey {
-	case "min":
-		minimum, atoiErr := strconv.Atoi(tagValue)
-		if atoiErr != nil {
-			return ErrTagInvalid
-		}
-		if fieldValue < minimum {
-			return ErrIntUnderMinimum
-		}
-	case "max":
-		maximum, atoiErr := strconv.Atoi(tagValue)
-		if atoiErr != nil {
-			return ErrTagInvalid
-		}
-		if fieldValue > maximum {
-			return ErrIntOverMaximum
-		}
-	case "in":
-		intsStrs := strings.Split(tagValue, ",")
-		if len(intsStrs) < 1 {
-			return ErrTagInvalid
-		}
-		for i := 0; i < len(intsStrs); i++ {
-			atoied, atoiErr := strconv.Atoi(intsStrs[i])
-			if atoiErr != nil {
-				return ErrTagInvalid
-			}
-			if fieldValue == atoied {
-				return nil
-			}
-		}
-		return ErrIntNotInSet
-	default:
-		err = ErrTagInvalid
-	}
-
-	if err != nil {
-		return err
 	}
 	return nil
 }
