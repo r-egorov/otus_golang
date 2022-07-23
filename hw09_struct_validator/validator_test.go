@@ -3,6 +3,7 @@ package hw09structvalidator
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -37,15 +38,17 @@ type (
 		Body string `json:"omitempty"`
 	}
 
-	Tweet struct {
-		message string `validate:"len:50"`
-		sender  string `validate:"in:user,admin"`
+	StrCase struct {
+		Message string   `validate:"len:50"`
+		Sender  string   `validate:"in:user,admin"`
+		Slice   []string `validate:"regexp:^s\\w*i$"`
 	}
 
 	IntCase struct {
-		minimum int `validate:"min:50"`
-		maximum int `validate:"max:100"`
-		in      int `validate:"in:42"`
+		Minimum int   `validate:"min:50"`
+		Maximum int   `validate:"max:100"`
+		In      int   `validate:"in:42"`
+		Slice   []int `validate:"in:42,21"`
 	}
 
 	testCase struct {
@@ -65,7 +68,7 @@ func TestValidateComplex(t *testing.T) {
 				Age:    18,
 				Email:  "example@mail.com",
 				Role:   "staff",
-				Phones: []string{"79234324123", "1111111111"},
+				Phones: []string{"79234324123", "11111111111"},
 				meta:   json.RawMessage(`{"test": "user"}`),
 			},
 			expectedErr: nil,
@@ -75,10 +78,10 @@ func TestValidateComplex(t *testing.T) {
 			in: User{
 				ID:     "824e3916-bc8f-4f95-9dd0", // too short
 				Name:   "John Doe",
-				Age:    10,                // not in set
-				Email:  "examplemail.com", // not valid email
-				Role:   "meremortal",      // not in
-				Phones: []string{"79234324123", "1111111111"},
+				Age:    10,                                     // not in set
+				Email:  "examplemail.com",                      // not valid email
+				Role:   "meremortal",                           // not in
+				Phones: []string{"792343244123", "1111111111"}, // len not
 				meta:   json.RawMessage(`{"test": "user"}`),
 			},
 			expectedErr: ValidationErrors{
@@ -98,6 +101,10 @@ func TestValidateComplex(t *testing.T) {
 					Field: "Role",
 					Err:   ErrStringNotInSet,
 				},
+				ValidationError{
+					Field: "Phones",
+					Err:   ErrStringLenInvalid,
+				},
 			},
 		},
 	}
@@ -109,39 +116,42 @@ func TestValidateString(t *testing.T) {
 	tests := []testCase{
 		{
 			name: "String KO - too short",
-			in: Tweet{
-				message: "Can't you think of even 50 symbols? Pathetic.",
-				sender:  "user",
+			in: StrCase{
+				Message: "Can't you think of even 50 symbols? Pathetic.",
+				Sender:  "user",
+				Slice:   []string{"somesushi", "satoshi", "si"},
 			},
 			expectedErr: ValidationErrors{
 				ValidationError{
-					Field: "message",
+					Field: "Message",
 					Err:   ErrStringLenInvalid,
 				},
 			},
 		},
 		{
 			name: "String KO - too long",
-			in: Tweet{
-				message: "Wow, that's a good job you've done here, bravo. You outdid yourself.",
-				sender:  "user",
+			in: StrCase{
+				Message: "Wow, that's a good job you've done here, bravo. You outdid yourself.",
+				Sender:  "user",
+				Slice:   []string{"somesushi", "satoshi", "si"},
 			},
 			expectedErr: ValidationErrors{
 				ValidationError{
-					Field: "message",
+					Field: "Message",
 					Err:   ErrStringLenInvalid,
 				},
 			},
 		},
 		{
 			name: "String KO - not in set",
-			in: Tweet{
-				message: "Wow, that's a good job you've done here, bravo. Yo",
-				sender:  "justsomedude",
+			in: StrCase{
+				Message: "Wow, that's a good job you've done here, bravo. Yo",
+				Sender:  "justsomedude",
+				Slice:   []string{"somesushi", "satoshi", "si"},
 			},
 			expectedErr: ValidationErrors{
 				ValidationError{
-					Field: "sender",
+					Field: "Sender",
 					Err:   ErrStringNotInSet,
 				},
 			},
@@ -153,29 +163,31 @@ func TestValidateString(t *testing.T) {
 func TestValidateInt(t *testing.T) {
 	tests := []testCase{
 		{
-			name: "under minimum",
+			name: "under Minimum",
 			in: IntCase{
-				minimum: 1,
-				maximum: 70,
-				in:      42,
+				Minimum: 1,
+				Maximum: 70,
+				In:      42,
+				Slice:   []int{42, 21},
 			},
 			expectedErr: ValidationErrors{
 				ValidationError{
-					Field: "minimum",
+					Field: "Minimum",
 					Err:   ErrIntUnderMinimum,
 				},
 			},
 		},
 		{
-			name: "over maximum",
+			name: "over Maximum",
 			in: IntCase{
-				minimum: 100,
-				maximum: 250,
-				in:      42,
+				Minimum: 100,
+				Maximum: 250,
+				In:      42,
+				Slice:   []int{42, 21},
 			},
 			expectedErr: ValidationErrors{
 				ValidationError{
-					Field: "maximum",
+					Field: "Maximum",
 					Err:   ErrIntOverMaximum,
 				},
 			},
@@ -183,13 +195,29 @@ func TestValidateInt(t *testing.T) {
 		{
 			name: "not in set",
 			in: IntCase{
-				minimum: 100,
-				maximum: 100,
-				in:      100500,
+				Minimum: 100,
+				Maximum: 100,
+				In:      100500,
+				Slice:   []int{42, 21},
 			},
 			expectedErr: ValidationErrors{
 				ValidationError{
-					Field: "in",
+					Field: "In",
+					Err:   ErrIntNotInSet,
+				},
+			},
+		},
+		{
+			name: "slice not in set",
+			in: IntCase{
+				Minimum: 100,
+				Maximum: 100,
+				In:      42,
+				Slice:   []int{42, 22},
+			},
+			expectedErr: ValidationErrors{
+				ValidationError{
+					Field: "Slice",
 					Err:   ErrIntNotInSet,
 				},
 			},
@@ -214,6 +242,12 @@ func runTests(t *testing.T, testCases []testCase) {
 				if errors.As(errs, &valErrs) {
 					var expectedErrs ValidationErrors
 					require.ErrorAs(t, tt.expectedErr, &expectedErrs)
+					require.Equal(t, len(expectedErrs), len(valErrs),
+						fmt.Sprintf(
+							"expected err: %s\ngot err: %s\n",
+							expectedErrs, valErrs,
+						),
+					)
 					for i, err := range valErrs {
 						require.ErrorIs(t, err, expectedErrs[i])
 					}

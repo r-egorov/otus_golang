@@ -16,7 +16,7 @@ var (
 	ErrStringNotInSet      = errors.New("string not in set")
 	ErrStringNotRegexplike = errors.New("string not regexplike")
 
-	ErrIntUnderMinimum = errors.New("int less than minimum")
+	ErrIntUnderMinimum = errors.New("int less than Minimum")
 	ErrIntOverMaximum  = errors.New("int greater than maximuim")
 	ErrIntNotInSet     = errors.New("int not in set")
 )
@@ -57,9 +57,11 @@ func Validate(v interface{}) error {
 	}
 
 	for i := 0; i < typeOfStruct.NumField(); i++ {
-		err := validateField(typeOfStruct.Field(i), valOfStruct.Field(i))
-		if err != nil {
-			errs = append(errs, *err)
+		if valOfStruct.Field(i).CanInterface() { // if false, field is unexported
+			err := validateField(typeOfStruct.Field(i), valOfStruct.Field(i))
+			if err != nil {
+				errs = append(errs, *err)
+			}
 		}
 	}
 
@@ -85,7 +87,7 @@ func validateField(field reflect.StructField, fieldValue reflect.Value) *Validat
 
 	switch field.Type.Kind() { //nolint:exhaustive
 	case reflect.Slice:
-		err = processSlice(field, tags)
+		err = processSlice(field, fieldValue, tags)
 	case reflect.String:
 		err = processString(fieldValue.String(), tags)
 	case reflect.Int:
@@ -113,15 +115,51 @@ func parseTags(rawTags string) (map[string]string, error) {
 	return tags, nil
 }
 
-func processSlice(sl reflect.StructField, tags map[string]string) error {
+func processSlice(
+	sl reflect.StructField,
+	fieldValue reflect.Value,
+	tags map[string]string,
+) error {
+	var err error
 	elemType := sl.Type.Elem()
 	switch elemType.Kind() { //nolint:exhaustive
 	case reflect.String:
-		fmt.Println("slice of strings")
+		slice, ok := fieldValue.Interface().([]string)
+		if !ok {
+			return ErrTypeUnsupported
+		}
+		err = processStringSlice(slice, tags)
 	case reflect.Int:
-		fmt.Println("slice of ints")
+		slice, ok := fieldValue.Interface().([]int)
+		if !ok {
+			return ErrTypeUnsupported
+		}
+		err = processIntSlice(slice, tags)
 	default:
-		fmt.Println("slice not supported")
+		err = ErrTypeUnsupported
+	}
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func processStringSlice(slice []string, tags map[string]string) error {
+	for _, str := range slice {
+		err := processString(str, tags)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func processIntSlice(slice []int, tags map[string]string) error {
+	for _, intElem := range slice {
+		err := processInt(intElem, tags)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
