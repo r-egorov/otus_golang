@@ -10,11 +10,11 @@ func processInt(fieldValue int, tags map[string]string) error {
 	for tagKey := range tags {
 		tagValue := tags[tagKey]
 		switch tagKey {
-		case "min":
+		case minTag:
 			err = checkIntMinTag(fieldValue, tagValue)
-		case "max":
+		case maxTag:
 			err = checkIntMaxTag(fieldValue, tagValue)
-		case "in":
+		case inTag:
 			err = checkIntInSet(fieldValue, strings.Split(tagValue, ","))
 		default:
 			err = ErrTagInvalid

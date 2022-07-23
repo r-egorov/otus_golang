@@ -16,7 +16,7 @@ type (
 	User struct {
 		ID     string `json:"id" validate:"len:36"`
 		Name   string
-		Age    int      `validate:"min:18"` // `validate:"min:18|max:50"`
+		Age    int      `validate:"min:18|max:50"`
 		Email  string   `validate:"regexp:^\\w+@\\w+\\.\\w+$"`
 		Role   UserRole `validate:"in:admin,staff"`
 		Phones []string `validate:"len:11"`
@@ -45,10 +45,11 @@ type (
 	}
 
 	IntCase struct {
-		Minimum int   `validate:"min:50"`
-		Maximum int   `validate:"max:100"`
-		In      int   `validate:"in:42"`
-		Slice   []int `validate:"in:42,21"`
+		Minimum  int   `validate:"min:50"`
+		Maximum  int   `validate:"max:100"`
+		In       int   `validate:"in:42"`
+		Slice    []int `validate:"in:42,21"`
+		Multiple int   `validate:"min:50|max:100"`
 	}
 
 	testCase struct {
@@ -165,10 +166,11 @@ func TestValidateInt(t *testing.T) {
 		{
 			name: "under Minimum",
 			in: IntCase{
-				Minimum: 1,
-				Maximum: 70,
-				In:      42,
-				Slice:   []int{42, 21},
+				Minimum:  1,
+				Maximum:  70,
+				In:       42,
+				Slice:    []int{42, 21},
+				Multiple: 70,
 			},
 			expectedErr: ValidationErrors{
 				ValidationError{
@@ -180,10 +182,11 @@ func TestValidateInt(t *testing.T) {
 		{
 			name: "over Maximum",
 			in: IntCase{
-				Minimum: 100,
-				Maximum: 250,
-				In:      42,
-				Slice:   []int{42, 21},
+				Minimum:  100,
+				Maximum:  250,
+				In:       42,
+				Slice:    []int{42, 21},
+				Multiple: 70,
 			},
 			expectedErr: ValidationErrors{
 				ValidationError{
@@ -195,10 +198,11 @@ func TestValidateInt(t *testing.T) {
 		{
 			name: "not in set",
 			in: IntCase{
-				Minimum: 100,
-				Maximum: 100,
-				In:      100500,
-				Slice:   []int{42, 21},
+				Minimum:  100,
+				Maximum:  100,
+				In:       100500,
+				Slice:    []int{42, 21},
+				Multiple: 70,
 			},
 			expectedErr: ValidationErrors{
 				ValidationError{
@@ -210,15 +214,48 @@ func TestValidateInt(t *testing.T) {
 		{
 			name: "slice not in set",
 			in: IntCase{
-				Minimum: 100,
-				Maximum: 100,
-				In:      42,
-				Slice:   []int{42, 22},
+				Minimum:  100,
+				Maximum:  100,
+				In:       42,
+				Slice:    []int{42, 22},
+				Multiple: 70,
 			},
 			expectedErr: ValidationErrors{
 				ValidationError{
 					Field: "Slice",
 					Err:   ErrIntNotInSet,
+				},
+			},
+		},
+		{
+			name: "multiple tag: int under minimum",
+			in: IntCase{
+				Minimum:  100,
+				Maximum:  100,
+				In:       42,
+				Slice:    []int{42, 21},
+				Multiple: 25,
+			},
+			expectedErr: ValidationErrors{
+				ValidationError{
+					Field: "Multiple",
+					Err:   ErrIntUnderMinimum,
+				},
+			},
+		},
+		{
+			name: "multiple tag: int over maximum",
+			in: IntCase{
+				Minimum:  100,
+				Maximum:  100,
+				In:       42,
+				Slice:    []int{42, 21},
+				Multiple: 125,
+			},
+			expectedErr: ValidationErrors{
+				ValidationError{
+					Field: "Multiple",
+					Err:   ErrIntOverMaximum,
 				},
 			},
 		},

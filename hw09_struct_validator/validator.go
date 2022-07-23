@@ -7,6 +7,15 @@ import (
 	"strings"
 )
 
+const (
+	validateTagKey = "validate"
+	lenTag         = "len"
+	inTag          = "in"
+	regexpTag      = "regexp"
+	minTag         = "min"
+	maxTag         = "max"
+)
+
 var (
 	ErrNotAStruct      = errors.New("parameter is not a struct")
 	ErrTagInvalid      = errors.New("invalid tag")
@@ -72,7 +81,7 @@ func Validate(v interface{}) error {
 }
 
 func validateField(field reflect.StructField, fieldValue reflect.Value) *ValidationError {
-	rawTag, needToBeValidated := field.Tag.Lookup("validate")
+	rawTag, needToBeValidated := field.Tag.Lookup(validateTagKey)
 	if !needToBeValidated {
 		return nil
 	}
@@ -107,10 +116,10 @@ func validateField(field reflect.StructField, fieldValue reflect.Value) *Validat
 
 func parseTags(rawTags string) (map[string]string, error) {
 	tags := make(map[string]string)
-	tagSplitted := strings.SplitN(rawTags, ":", 2)
-	if len(tagSplitted) != 2 {
-		return nil, ErrTagInvalid
+	rawTagsSplitted := strings.Split(rawTags, "|")
+	for _, rawTag := range rawTagsSplitted {
+		tagSplitted := strings.SplitN(rawTag, ":", 2)
+		tags[tagSplitted[0]] = tagSplitted[1]
 	}
-	tags[tagSplitted[0]] = tagSplitted[1]
 	return tags, nil
 }

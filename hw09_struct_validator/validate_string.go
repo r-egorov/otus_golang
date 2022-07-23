@@ -11,11 +11,11 @@ func processString(str string, tags map[string]string) error {
 	for tagKey := range tags {
 		tagValue := tags[tagKey]
 		switch tagKey {
-		case "len":
+		case lenTag:
 			err = checkStringLenTag(str, tagValue)
-		case "in":
+		case inTag:
 			err = checkStringInSet(str, strings.Split(tagValue, ","))
-		case "regexp":
+		case regexpTag:
 			err = checkStringRegexplike(str, tagValue)
 		default:
 			err = ErrTagInvalid
