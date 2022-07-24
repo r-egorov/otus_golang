@@ -119,6 +119,9 @@ func parseTags(rawTags string) (map[string]string, error) {
 	rawTagsSplitted := strings.Split(rawTags, "|")
 	for _, rawTag := range rawTagsSplitted {
 		tagSplitted := strings.SplitN(rawTag, ":", 2)
+		if len(tagSplitted) < 2 {
+			return nil, ErrTagInvalid
+		}
 		tags[tagSplitted[0]] = tagSplitted[1]
 	}
 	return tags, nil

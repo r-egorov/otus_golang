@@ -23,21 +23,6 @@ type (
 		meta   json.RawMessage
 	}
 
-	App struct {
-		Version string `validate:"len:5"`
-	}
-
-	Token struct {
-		Header    []byte
-		Payload   []byte
-		Signature []byte
-	}
-
-	Response struct {
-		Code int    `validate:"in:200,404,500"`
-		Body string `json:"omitempty"`
-	}
-
 	StrCase struct {
 		Message string   `validate:"len:50"`
 		Sender  string   `validate:"in:user,admin"`
@@ -256,6 +241,44 @@ func TestValidateInt(t *testing.T) {
 				ValidationError{
 					Field: "Multiple",
 					Err:   ErrIntOverMaximum,
+				},
+			},
+		},
+	}
+	runTests(t, tests)
+}
+
+func TestInvalidTags(t *testing.T) {
+	tests := []testCase{
+		{
+			in: struct {
+				InvalidSingle   string `validate:"llen:2"`
+				InvalidMultiple string `validate:"len:2|inn:ss,vv"`
+			}{
+				InvalidSingle:   "st",
+				InvalidMultiple: "vv",
+			},
+			expectedErr: ValidationErrors{
+				ValidationError{
+					Field: "InvalidSingle",
+					Err:   ErrTagInvalid,
+				},
+				ValidationError{
+					Field: "InvalidMultiple",
+					Err:   ErrTagInvalid,
+				},
+			},
+		},
+		{
+			in: struct {
+				InvalidSingle string `validate:"llen"`
+			}{
+				InvalidSingle: "st",
+			},
+			expectedErr: ValidationErrors{
+				ValidationError{
+					Field: "InvalidSingle",
+					Err:   ErrTagInvalid,
 				},
 			},
 		},
