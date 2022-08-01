@@ -10,7 +10,10 @@ import (
 
 const tcpNetwork = "tcp"
 
-var ErrNoConnection = errors.New("no connection was made")
+var (
+	ErrNoConnection     = errors.New("no connection was made")
+	ErrConnectionClosed = errors.New("connection closed by peer")
+)
 
 type TelnetClient struct {
 	network, addr string
@@ -31,7 +34,7 @@ func NewTelnetClient(address string, timeout time.Duration, in io.ReadCloser, ou
 }
 
 func (t *TelnetClient) Connect() error {
-	conn, err := net.Dial(t.network, t.addr)
+	conn, err := net.DialTimeout(t.network, t.addr, t.timeout)
 	if err != nil {
 		return err
 	}
@@ -73,13 +76,12 @@ func (t *TelnetClient) Receive() error {
 	reader := bufio.NewReader(t.conn)
 	bytesRead, err := reader.Read(buf)
 	if err != nil {
+		return ErrConnectionClosed
+	}
+	_, err = t.out.Write(buf[:bytesRead])
+	if err != nil {
 		return err
 	}
-	if bytesRead > 0 {
-		_, err := t.out.Write(buf[:bytesRead])
-		if err != nil {
-			return err
-		}
-	}
+
 	return nil
 }
