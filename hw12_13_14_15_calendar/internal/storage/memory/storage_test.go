@@ -168,10 +168,10 @@ func TestStorage_ListEventsDay(t *testing.T) {
 	t.Run("it returns list of events on a day", func(t *testing.T) {
 		ctx := context.Background()
 		store := New()
-		date := time.Date(2022, time.Month(3), 1, 0, 0, 0, 0, time.UTC)
-		morning := time.Date(2022, time.Month(3), 1, 6, 30, 0, 0, time.UTC)
-		afternoon := time.Date(2022, time.Month(3), 1, 15, 30, 0, 0, time.UTC)
-		evening := time.Date(2022, time.Month(3), 1, 21, 30, 0, 0, time.UTC)
+		date := time.Date(2022, time.Month(3), 16, 0, 0, 0, 0, time.UTC)
+		morning := time.Date(2022, time.Month(3), 16, 6, 30, 0, 0, time.UTC)
+		afternoon := time.Date(2022, time.Month(3), 16, 15, 30, 0, 0, time.UTC)
+		evening := time.Date(2022, time.Month(3), 16, 21, 30, 0, 0, time.UTC)
 
 		eventOne := generateEvent()
 		eventOne.DateTime = morning
@@ -215,6 +215,120 @@ func TestStorage_ListEventsDay(t *testing.T) {
 		require.NoError(t, err)
 
 		date := time.Date(2022, time.Month(12), 12, 0, 0, 0, 0, time.UTC)
+		got, err := store.ListEventsDay(ctx, date)
+		require.NoError(t, err)
+		require.Equal(t, []storage.Event{}, got)
+	})
+}
+
+func TestStorage_ListEventsWeek(t *testing.T) {
+	t.Run("it returns list of events in a week", func(t *testing.T) {
+		ctx := context.Background()
+		store := New()
+		weekStart := time.Date(2022, time.Month(3), 7, 0, 0, 0, 0, time.UTC)
+		thursday := time.Date(2022, time.Month(3), 10, 6, 30, 0, 0, time.UTC)
+		friday := time.Date(2022, time.Month(3), 11, 15, 30, 0, 0, time.UTC)
+		tuesday := time.Date(2022, time.Month(3), 8, 21, 30, 0, 0, time.UTC)
+
+		eventOne := generateEvent()
+		eventOne.DateTime = tuesday
+		_, err := store.SaveEvent(ctx, eventOne)
+		require.NoError(t, err)
+
+		eventTwo := generateEvent()
+		eventTwo.DateTime = friday
+		_, err = store.SaveEvent(ctx, eventTwo)
+		require.NoError(t, err)
+
+		eventThree := generateEvent()
+		eventThree.DateTime = thursday
+		_, err = store.SaveEvent(ctx, eventThree)
+		require.NoError(t, err)
+
+		otherEvent := generateEvent()
+		_, err = store.SaveEvent(ctx, otherEvent)
+		require.NoError(t, err)
+
+		expected := []storage.Event{eventOne, eventTwo, eventThree}
+		got, err := store.ListEventsWeek(ctx, weekStart)
+		require.NoError(t, err)
+		assertEventListsEqual(t, expected, got)
+	})
+
+	t.Run("it returns empty list of events", func(t *testing.T) {
+		ctx := context.Background()
+		store := New()
+		thursday := time.Date(2022, time.Month(3), 10, 6, 30, 0, 0, time.UTC)
+		friday := time.Date(2022, time.Month(3), 11, 15, 30, 0, 0, time.UTC)
+
+		eventOne := generateEvent()
+		eventOne.DateTime = thursday
+		_, err := store.SaveEvent(ctx, eventOne)
+		require.NoError(t, err)
+
+		eventTwo := generateEvent()
+		eventTwo.DateTime = friday
+		_, err = store.SaveEvent(ctx, eventTwo)
+		require.NoError(t, err)
+
+		weekStart := time.Date(2022, time.Month(10), 10, 0, 0, 0, 0, time.UTC)
+		got, err := store.ListEventsDay(ctx, weekStart)
+		require.NoError(t, err)
+		require.Equal(t, []storage.Event{}, got)
+	})
+}
+
+func TestStorage_ListEventsMonth(t *testing.T) {
+	t.Run("it returns list of events in a month", func(t *testing.T) {
+		ctx := context.Background()
+		store := New()
+		date := time.Date(2022, time.Month(3), 1, 0, 0, 0, 0, time.UTC)
+		tenth := time.Date(2022, time.Month(3), 10, 6, 30, 0, 0, time.UTC)
+		fifteenth := time.Date(2022, time.Month(3), 15, 15, 30, 0, 0, time.UTC)
+		twentyfifth := time.Date(2022, time.Month(3), 25, 21, 30, 0, 0, time.UTC)
+
+		eventOne := generateEvent()
+		eventOne.DateTime = tenth
+		_, err := store.SaveEvent(ctx, eventOne)
+		require.NoError(t, err)
+
+		eventTwo := generateEvent()
+		eventTwo.DateTime = fifteenth
+		_, err = store.SaveEvent(ctx, eventTwo)
+		require.NoError(t, err)
+
+		eventThree := generateEvent()
+		eventThree.DateTime = twentyfifth
+		_, err = store.SaveEvent(ctx, eventThree)
+		require.NoError(t, err)
+
+		otherEvent := generateEvent()
+		_, err = store.SaveEvent(ctx, otherEvent)
+		require.NoError(t, err)
+
+		expected := []storage.Event{eventOne, eventTwo, eventThree}
+		got, err := store.ListEventsMonth(ctx, date)
+		require.NoError(t, err)
+		assertEventListsEqual(t, expected, got)
+	})
+
+	t.Run("it returns empty list of events", func(t *testing.T) {
+		ctx := context.Background()
+		store := New()
+		tenth := time.Date(2022, time.Month(3), 10, 6, 30, 0, 0, time.UTC)
+		fifteenth := time.Date(2022, time.Month(3), 15, 15, 30, 0, 0, time.UTC)
+
+		eventOne := generateEvent()
+		eventOne.DateTime = tenth
+		_, err := store.SaveEvent(ctx, eventOne)
+		require.NoError(t, err)
+
+		eventTwo := generateEvent()
+		eventTwo.DateTime = fifteenth
+		_, err = store.SaveEvent(ctx, eventTwo)
+		require.NoError(t, err)
+
+		date := time.Date(2022, time.Month(12), 1, 0, 0, 0, 0, time.UTC)
 		got, err := store.ListEventsDay(ctx, date)
 		require.NoError(t, err)
 		require.Equal(t, []storage.Event{}, got)
