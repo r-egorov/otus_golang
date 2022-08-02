@@ -26,6 +26,10 @@ func (s *Storage) SaveEvent(ctx context.Context, event storage.Event) (storage.E
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	if _, exists := s.store[event.ID]; exists {
+		return storage.Event{}, storage.NewErrIDNotUnique(event.ID)
+	}
+
 	roundedRefDatetime := event.DateTime.Round(time.Minute)
 	for _, eventInStore := range s.store {
 		roundedEventDatetime := eventInStore.DateTime.Round(time.Minute)
@@ -43,14 +47,34 @@ func (s *Storage) SaveEvent(ctx context.Context, event storage.Event) (storage.E
 func (s *Storage) UpdateEvent(ctx context.Context, event storage.Event) (storage.Event, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
+	if _, exists := s.store[event.ID]; !exists {
+		return storage.Event{}, storage.NewErrIDNotFound(event.ID)
+	}
+
+	roundedRefDatetime := event.DateTime.Round(time.Minute)
+	for _, eventInStore := range s.store {
+		roundedEventDatetime := eventInStore.DateTime.Round(time.Minute)
+		isOwner := event.OwnerID == eventInStore.OwnerID
+		dateBusy := roundedEventDatetime == roundedRefDatetime
+		if isOwner && dateBusy {
+			return storage.Event{}, storage.NewErrDateBusy(event.OwnerID, event.DateTime)
+		}
+	}
+
 	s.store[event.ID] = event
 	return event, nil
 }
 
-func (s *Storage) DeleteEvent(ctx context.Context, event storage.Event) error {
+func (s *Storage) DeleteEvent(ctx context.Context, eventID uuid.UUID) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	delete(s.store, event.ID)
+
+	if _, exists := s.store[eventID]; !exists {
+		return storage.NewErrIDNotFound(eventID)
+	}
+
+	delete(s.store, eventID)
 	return nil
 }
 

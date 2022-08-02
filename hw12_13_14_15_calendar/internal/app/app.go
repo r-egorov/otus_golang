@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/storage"
 )
 
@@ -18,7 +19,7 @@ type Storage interface {
 	Close(ctx context.Context) error
 	SaveEvent(ctx context.Context, event storage.Event) (storage.Event, error)
 	UpdateEvent(ctx context.Context, event storage.Event) (storage.Event, error)
-	DeleteEvent(ctx context.Context, event storage.Event) error
+	DeleteEvent(ctx context.Context, eventID uuid.UUID) error
 	ListEventsDay(ctx context.Context, day time.Time) ([]storage.Event, error)
 	ListEventsWeek(ctx context.Context, weekStart time.Time) ([]storage.Event, error)
 	ListEventsMonth(ctx context.Context, monthStart time.Time) ([]storage.Event, error)

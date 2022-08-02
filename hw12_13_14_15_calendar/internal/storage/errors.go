@@ -25,3 +25,37 @@ func NewErrDateBusy(ownerID uuid.UUID, date time.Time) *ErrDateBusy {
 		Date:    date,
 	}
 }
+
+type ErrIDNotUnique struct {
+	EventID uuid.UUID
+}
+
+func (e ErrIDNotUnique) Error() string {
+	return fmt.Sprintf(
+		"event with ID <%s> already exists",
+		e.EventID.String(),
+	)
+}
+
+func NewErrIDNotUnique(eventID uuid.UUID) *ErrIDNotUnique {
+	return &ErrIDNotUnique{
+		EventID: eventID,
+	}
+}
+
+type ErrIDNotFound struct {
+	EventID uuid.UUID
+}
+
+func (e ErrIDNotFound) Error() string {
+	return fmt.Sprintf(
+		"event with ID <%s> not found",
+		e.EventID.String(),
+	)
+}
+
+func NewErrIDNotFound(eventID uuid.UUID) *ErrIDNotFound {
+	return &ErrIDNotFound{
+		EventID: eventID,
+	}
+}
