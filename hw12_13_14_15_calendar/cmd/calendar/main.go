@@ -8,16 +8,16 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/app"
-	"github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/logger"
-	internalhttp "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/server/http"
-	memorystorage "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/storage/memory"
+	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/app"
+	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/logger"
+	internalhttp "github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/server/http"
+	memorystorage "github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/storage/memory"
 )
 
-var configFile string
+var configFilePath string
 
 func init() {
-	flag.StringVar(&configFile, "config", "/etc/calendar/config.toml", "Path to configuration file")
+	flag.StringVar(&configFilePath, "config", "/etc/calendar/config.toml", "Path to configuration file")
 }
 
 func main() {
@@ -28,8 +28,15 @@ func main() {
 		return
 	}
 
-	config := NewConfig()
-	logg := logger.New(config.Logger.Level)
+	config := NewConfig(configFilePath)
+	logOut, logOutClose := config.GetLogWriter()
+	defer func() {
+		if err := logOutClose(); err != nil {
+			panic(err)
+		}
+	}()
+
+	logg := logger.New(logOut, config.Logger.Level)
 
 	storage := memorystorage.New()
 	calendar := app.New(logg, storage)
