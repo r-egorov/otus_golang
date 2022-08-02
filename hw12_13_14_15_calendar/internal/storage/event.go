@@ -1,7 +1,17 @@
 package storage
 
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
+
 type Event struct {
-	ID    string
-	Title string
-	// TODO
+	ID          uuid.UUID
+	Title       string
+	DateTime    time.Time
+	Duration    time.Duration
+	Description string
+	OwnerID     uuid.UUID
+	// NotifyBefore time.Duration
 }

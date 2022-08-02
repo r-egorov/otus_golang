@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/spf13/viper"
 	"os"
+
+	"github.com/spf13/viper"
 )
 
 type Config struct {
@@ -29,7 +30,9 @@ func NewConfig(configFilePath string) Config {
 	})
 	viper.SetConfigType(configType)
 	viper.SetConfigFile(configFilePath)
-	viper.ReadInConfig()
+	if err := viper.ReadInConfig(); err != nil {
+		panic(fmt.Errorf("can't read config, err: %w", err))
+	}
 
 	loggerMap := viper.GetStringMapString("logger")
 
@@ -42,7 +45,7 @@ func NewConfig(configFilePath string) Config {
 	}
 }
 
-func (c Config) GetLogWriter() (out *os.File, close func() error) {
+func (c Config) GetLogWriter() (out *os.File, outClose func() error) {
 	var err error
 
 	switch c.Logger.OutPath {
@@ -51,11 +54,11 @@ func (c Config) GetLogWriter() (out *os.File, close func() error) {
 	case "stderr":
 		out = os.Stderr
 	default:
-		out, err = os.OpenFile(c.Logger.OutPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
+		out, err = os.OpenFile(c.Logger.OutPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o666)
 		if err != nil {
-			panic(fmt.Errorf("fatal: log file %s, err: %w\n", c.Logger.OutPath, err))
+			panic(fmt.Errorf("fatal: log file %s, err: %w", c.Logger.OutPath, err))
 		}
 	}
-	close = func() error { return out.Close() }
+	outClose = func() error { return out.Close() }
 	return
 }

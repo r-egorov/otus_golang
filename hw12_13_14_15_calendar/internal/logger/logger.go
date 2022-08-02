@@ -14,8 +14,6 @@ const (
 	debugLevel
 )
 
-const errMsgLogfileInvalid = "logger: can't write to its outfile"
-
 func (l logLevel) String() string {
 	return [...]string{"ERROR", "WARN", "INFO", "DEBUG"}[l]
 }
@@ -70,6 +68,6 @@ func (l Logger) Debug(msg string) {
 func (l Logger) log(msg string) {
 	_, err := fmt.Fprintf(l.out, "%s\n", msg)
 	if err != nil {
-		panic(errMsgLogfileInvalid)
+		panic(fmt.Errorf("fatal: logger can't write to its file, err %w", err))
 	}
 }
