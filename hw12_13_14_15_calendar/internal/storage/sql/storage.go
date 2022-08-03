@@ -11,6 +11,11 @@ import (
 	"time"
 )
 
+const (
+	insertEventQuery = `INSERT INTO events (id, title, datetime, duration, description, owner_id) VALUES ($1, $2, $3, $4, $5, $6)`
+	updateEventQuery = `UPDATE events SET title = $1, datetime = $2, duration = $3, description = $4, updated_at = now() WHERE id = $5`
+)
+
 type Storage struct {
 	User, Password, DBName, Host, Port string
 	db                                 *sql.DB
@@ -44,7 +49,6 @@ func (s *Storage) Close(ctx context.Context) error {
 }
 
 func (s *Storage) SaveEvent(ctx context.Context, event storage.Event) (storage.Event, error) {
-	fmt.Println("here")
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return event, err
@@ -54,7 +58,7 @@ func (s *Storage) SaveEvent(ctx context.Context, event storage.Event) (storage.E
 	}()
 	_, err = s.db.ExecContext(
 		ctx,
-		`INSERT INTO events (id, title, datetime, duration, description, owner_id) VALUES ($1, $2, $3, $4, $5, $6)`,
+		insertEventQuery,
 		event.ID,
 		event.Title,
 		event.DateTime,
@@ -81,8 +85,44 @@ func (s *Storage) SaveEvent(ctx context.Context, event storage.Event) (storage.E
 }
 
 func (s *Storage) UpdateEvent(ctx context.Context, event storage.Event) (storage.Event, error) {
-	return storage.Event{}, nil
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return event, err
+	}
+	defer func() {
+		_ = tx.Rollback()
+	}()
+
+	res, err := s.db.ExecContext(
+		ctx,
+		updateEventQuery,
+		event.Title,
+		event.DateTime,
+		event.Duration,
+		event.Description,
+		event.ID,
+	)
+	if err != nil {
+		pgErr, ok := err.(*pq.Error)
+		if ok && pgErr.Code == "23505" {
+			return event, storage.NewErrDateBusy(event.OwnerID, event.DateTime)
+		}
+	}
+
+	ra, err := res.RowsAffected()
+	if err != nil {
+		return event, err
+	}
+	if ra == 0 {
+		return event, storage.NewErrIDNotFound(event.ID)
+	}
+
+	if err = tx.Commit(); err != nil {
+		return event, err
+	}
+	return event, nil
 }
+
 func (s *Storage) DeleteEvent(ctx context.Context, eventID uuid.UUID) error {
 	return nil
 }
