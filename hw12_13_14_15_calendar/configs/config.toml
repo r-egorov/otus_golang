@@ -1,5 +1,11 @@
 [logger]
 level = "DEBUG"
-file = "./calendar.log"
-# TODO
-# ...
+file = "stdout"
+
+[storage]
+storage_type = "psql"
+user = "postgres"
+password = "postgres"
+db = "otus"
+host = "localhost"
+port = "5432"

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -28,8 +29,14 @@ func main() {
 		return
 	}
 
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Error:", r)
+		}
+	}()
+
 	config := NewConfig(configFilePath)
-	logOut, logOutClose := config.GetLogWriter()
+	logOut, logOutClose := getLogWriter(config)
 	defer func() {
 		if err := logOutClose(); err != nil {
 			panic(err)
@@ -65,4 +72,22 @@ func main() {
 		cancel()
 		os.Exit(1) //nolint:gocritic
 	}
+}
+
+func getLogWriter(c Config) (out *os.File, outClose func() error) {
+	var err error
+
+	switch c.Logger.OutPath {
+	case "stdout":
+		out = os.Stdout
+	case "stderr":
+		out = os.Stderr
+	default:
+		out, err = os.OpenFile(c.Logger.OutPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o666)
+		if err != nil {
+			panic(fmt.Errorf("fatal: log file %s, err: %w", c.Logger.OutPath, err))
+		}
+	}
+	outClose = func() error { return out.Close() }
+	return
 }
