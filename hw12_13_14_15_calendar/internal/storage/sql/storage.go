@@ -14,6 +14,7 @@ import (
 const (
 	insertEventQuery = `INSERT INTO events (id, title, datetime, duration, description, owner_id) VALUES ($1, $2, $3, $4, $5, $6)`
 	updateEventQuery = `UPDATE events SET title = $1, datetime = $2, duration = $3, description = $4, updated_at = now() WHERE id = $5`
+	deleteEventQuery = `DELETE FROM events WHERE id = $1`
 )
 
 type Storage struct {
@@ -124,8 +125,34 @@ func (s *Storage) UpdateEvent(ctx context.Context, event storage.Event) (storage
 }
 
 func (s *Storage) DeleteEvent(ctx context.Context, eventID uuid.UUID) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = tx.Rollback()
+	}()
+
+	res, err := s.db.ExecContext(
+		ctx,
+		deleteEventQuery,
+		eventID,
+	)
+
+	ra, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if ra == 0 {
+		return storage.NewErrIDNotFound(eventID)
+	}
+
+	if err = tx.Commit(); err != nil {
+		return err
+	}
 	return nil
 }
+
 func (s *Storage) ListEventsDay(ctx context.Context, day time.Time) ([]storage.Event, error) {
 	return []storage.Event{}, nil
 }
