@@ -154,8 +154,52 @@ func (s *Storage) DeleteEvent(ctx context.Context, eventID uuid.UUID) error {
 }
 
 func (s *Storage) ListEventsDay(ctx context.Context, day time.Time) ([]storage.Event, error) {
-	return []storage.Event{}, nil
+	rows, err := s.db.QueryContext(
+		ctx,
+		`SELECT id, title, datetime, duration, description, owner_id FROM events WHERE datetime >= $1 AND datetime < ($1 + INTERVAL '1 DAY')`,
+		day,
+	)
+	if err != nil {
+		return []storage.Event{}, err
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+
+	res := make([]storage.Event, 0)
+	for rows.Next() {
+		var (
+			event          storage.Event
+			sqlDuration    sql.NullInt64
+			sqlDescription sql.NullString
+		)
+
+		err = rows.Scan(
+			&event.ID,
+			&event.Title,
+			&event.DateTime,
+			&sqlDuration,
+			&sqlDescription,
+			&event.OwnerID,
+		)
+		if err != nil {
+			return []storage.Event{}, err
+		}
+		if sqlDuration.Valid {
+			event.Duration = time.Duration(sqlDuration.Int64)
+		}
+		if sqlDescription.Valid {
+			event.Description = sqlDescription.String
+		}
+
+		res = append(res, event)
+	}
+	if rows.Err() != nil {
+		return []storage.Event{}, rows.Err()
+	}
+	return res, nil
 }
+
 func (s *Storage) ListEventsWeek(ctx context.Context, weekStart time.Time) ([]storage.Event, error) {
 	return []storage.Event{}, nil
 }
