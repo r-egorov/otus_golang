@@ -22,8 +22,9 @@ type StorageConf struct {
 const configType = "toml"
 
 const (
-	defaultLogLevel    = "INFO"
-	defaultStorageType = "inmemory"
+	defaultLogLevel     = "INFO"
+	inmemoryStorageType = "inmemory"
+	psqlStorageType     = "psql"
 )
 
 func NewConfig(configFilePath string) Config {
@@ -32,7 +33,7 @@ func NewConfig(configFilePath string) Config {
 		"file":  "stdout",
 	})
 	viper.SetDefault("storage", map[string]string{
-		"storage_type": defaultStorageType,
+		"storage_type": inmemoryStorageType,
 	})
 
 	viper.SetConfigType(configType)

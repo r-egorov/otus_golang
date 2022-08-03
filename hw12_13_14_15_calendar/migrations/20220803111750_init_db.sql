@@ -10,7 +10,8 @@ CREATE TABLE IF NOT EXISTS events (
     owner_id uuid NOT NULL,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ,
-    PRIMARY KEY (id)
+    CONSTRAINT events_pkey PRIMARY KEY (id),
+    CONSTRAINT events_datetime_owner_id_key UNIQUE (datetime, owner_id)
 );
 -- +goose StatementEnd
 
