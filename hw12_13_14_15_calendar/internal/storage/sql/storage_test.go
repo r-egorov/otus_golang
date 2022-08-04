@@ -18,6 +18,9 @@ func TestSQLStorage_SaveEvent(t *testing.T) {
 	s := New("postgres", "postgres", "calendar_test", "localhost", "5432")
 	ctx := context.Background()
 	require.NoError(t, s.Connect(ctx))
+	defer func() {
+		require.NoError(t, s.Close(ctx))
+	}()
 
 	t.Run("basic", func(t *testing.T) {
 		defer truncateTable(t, s.db)
@@ -66,6 +69,9 @@ func TestStorage_UpdateEvent(t *testing.T) {
 	s := New("postgres", "postgres", "calendar_test", "localhost", "5432")
 	ctx := context.Background()
 	require.NoError(t, s.Connect(ctx))
+	defer func() {
+		require.NoError(t, s.Close(ctx))
+	}()
 
 	t.Run("basic", func(t *testing.T) {
 		defer truncateTable(t, s.db)
@@ -119,6 +125,9 @@ func TestStorage_DeleteEvent(t *testing.T) {
 	s := New("postgres", "postgres", "calendar_test", "localhost", "5432")
 	ctx := context.Background()
 	require.NoError(t, s.Connect(ctx))
+	defer func() {
+		require.NoError(t, s.Close(ctx))
+	}()
 
 	t.Run("basic", func(t *testing.T) {
 		defer truncateTable(t, s.db)
@@ -149,6 +158,9 @@ func TestStorage_ListEventsDay(t *testing.T) {
 	s := New("postgres", "postgres", "calendar_test", "localhost", "5432")
 	ctx := context.Background()
 	require.NoError(t, s.Connect(ctx))
+	defer func() {
+		require.NoError(t, s.Close(ctx))
+	}()
 
 	t.Run("it returns list of events on a day", func(t *testing.T) {
 		defer truncateTable(t, s.db)
@@ -210,6 +222,9 @@ func TestStorage_ListEventsWeek(t *testing.T) {
 	s := New("postgres", "postgres", "calendar_test", "localhost", "5432")
 	ctx := context.Background()
 	require.NoError(t, s.Connect(ctx))
+	defer func() {
+		require.NoError(t, s.Close(ctx))
+	}()
 
 	t.Run("it returns list of events in a week", func(t *testing.T) {
 		defer truncateTable(t, s.db)
@@ -271,6 +286,9 @@ func TestStorage_ListEventsMonth(t *testing.T) {
 	s := New("postgres", "postgres", "calendar_test", "localhost", "5432")
 	ctx := context.Background()
 	require.NoError(t, s.Connect(ctx))
+	defer func() {
+		require.NoError(t, s.Close(ctx))
+	}()
 
 	t.Run("it returns list of events in a month", func(t *testing.T) {
 		defer truncateTable(t, s.db)
@@ -307,7 +325,7 @@ func TestStorage_ListEventsMonth(t *testing.T) {
 
 	t.Run("it returns empty list of events", func(t *testing.T) {
 		defer truncateTable(t, s.db)
-		
+
 		tenth := time.Date(2022, time.Month(3), 10, 6, 30, 0, 0, time.UTC)
 		fifteenth := time.Date(2022, time.Month(3), 15, 15, 30, 0, 0, time.UTC)
 
