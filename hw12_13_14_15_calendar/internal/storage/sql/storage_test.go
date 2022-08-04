@@ -48,6 +48,23 @@ func TestSQLStorage_SaveEvent(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, refEvent, eventInDB)
 	})
+
+	t.Run("it returns err if date is busy", func(t *testing.T) {
+		refEvent := generateEvent()
+		_, err := s.SaveEvent(ctx, refEvent)
+		require.NoError(t, err)
+
+		sameDateEvent := generateEvent()
+		sameDateEvent.DateTime = refEvent.DateTime
+		sameDateEvent.OwnerID = refEvent.OwnerID
+		_, err = s.SaveEvent(ctx, sameDateEvent)
+		var errDateBusy *storage.ErrDateBusy
+		require.ErrorAs(t, err, &errDateBusy)
+
+		eventInDB, err := selectEvent(s.db, refEvent.ID)
+		require.NoError(t, err)
+		require.Equal(t, refEvent, eventInDB)
+	})
 }
 
 func truncateTable(t *testing.T, db *sql.DB) {
