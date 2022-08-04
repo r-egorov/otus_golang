@@ -9,7 +9,7 @@ import (
 type Config struct {
 	Logger  LoggerConf
 	Storage StorageConf
-	// TODO
+	Server  ServerConf
 }
 
 type LoggerConf struct {
@@ -18,6 +18,10 @@ type LoggerConf struct {
 
 type StorageConf struct {
 	StorageType, User, Password, DBName, Host, Port string
+}
+
+type ServerConf struct {
+	Host, Port string
 }
 
 const configType = "toml"
@@ -36,6 +40,10 @@ func NewConfig(configFilePath string) Config {
 	viper.SetDefault("storage", map[string]string{
 		"storage_type": inmemoryStorageType,
 	})
+	viper.SetDefault("server", map[string]string{
+		"host": "localhost",
+		"port": "8000",
+	})
 
 	viper.SetConfigType(configType)
 	viper.SetConfigFile(configFilePath)
@@ -45,9 +53,11 @@ func NewConfig(configFilePath string) Config {
 
 	storage := parseStorageMap(viper.GetStringMapString("storage"))
 	logger := parseLoggerMap(viper.GetStringMapString("logger"))
+	server := parseServerMap(viper.GetStringMapString("server"))
 	return Config{
 		Logger:  logger,
 		Storage: storage,
+		Server:  server,
 	}
 }
 
@@ -81,5 +91,12 @@ func parseStorageMap(storageMap map[string]string) StorageConf {
 		DBName:      dbName,
 		Host:        host,
 		Port:        port,
+	}
+}
+
+func parseServerMap(serverMap map[string]string) ServerConf {
+	return ServerConf{
+		Host: serverMap["host"],
+		Port: serverMap["port"],
 	}
 }

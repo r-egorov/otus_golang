@@ -13,6 +13,7 @@ import (
 	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/logger"
 	internalhttp "github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/server/http"
 	memorystorage "github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/storage/memory"
+	sqlstorage "github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/storage/sql"
 )
 
 var configFilePath string
@@ -45,15 +46,28 @@ func main() {
 
 	logg := logger.New(logOut, config.Logger.Level)
 
-	storage := memorystorage.New()
+	var storage app.Storage
+	switch config.Storage.StorageType {
+	case psqlStorageType:
+		storage = sqlstorage.New(
+			config.Storage.User,
+			config.Storage.Password,
+			config.Storage.DBName,
+			config.Storage.Host,
+			config.Storage.Port,
+		)
+	default:
+		storage = memorystorage.New()
+	}
 	calendar := app.New(logg, storage)
 
-	server := internalhttp.NewServer(logg, calendar)
+	server := internalhttp.NewServer(logg, calendar, config.Server.Host, config.Server.Port)
 
 	ctx, cancel := signal.NotifyContext(context.Background(),
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 	defer cancel()
 
+	serverStopped := make(chan struct{})
 	go func() {
 		<-ctx.Done()
 
@@ -63,6 +77,7 @@ func main() {
 		if err := server.Stop(ctx); err != nil {
 			logg.Error("failed to stop http server: " + err.Error())
 		}
+		serverStopped <- struct{}{}
 	}()
 
 	logg.Info("calendar is running...")
@@ -72,6 +87,7 @@ func main() {
 		cancel()
 		os.Exit(1) //nolint:gocritic
 	}
+	<-serverStopped
 }
 
 func getLogWriter(c Config) (out *os.File, outClose func() error) {
