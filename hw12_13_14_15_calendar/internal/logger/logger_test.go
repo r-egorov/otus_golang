@@ -42,16 +42,27 @@ func TestLogger(t *testing.T) {
 			l.Info(msgInfo)
 			l.Debug(msgDebug)
 
+			errorPrefix := "[ERROR]"
+			warnPrefix := "[WARN]"
+			infoPrefix := "[INFO]"
+			debugPrefix := "[DEBUG]"
+
 			var expected string
 			switch tc.level {
 			case "ERROR":
-				expected = msgErr + "\n"
+				expected = errorPrefix + " " + msgErr + "\n"
 			case "WARN":
-				expected = msgErr + "\n" + msgWarn + "\n"
+				expected = errorPrefix + " " + msgErr + "\n" +
+					warnPrefix + " " + msgWarn + "\n"
 			case "INFO":
-				expected = msgErr + "\n" + msgWarn + "\n" + msgInfo + "\n"
+				expected = errorPrefix + " " + msgErr + "\n" +
+					warnPrefix + " " + msgWarn + "\n" +
+					infoPrefix + " " + msgInfo + "\n"
 			case "DEBUG":
-				expected = msgErr + "\n" + msgWarn + "\n" + msgInfo + "\n" + msgDebug + "\n"
+				expected = errorPrefix + " " + msgErr + "\n" +
+					warnPrefix + " " + msgWarn + "\n" +
+					infoPrefix + " " + msgInfo + "\n" +
+					debugPrefix + " " + msgDebug + "\n"
 			}
 
 			require.Equal(t, expected, out.String())

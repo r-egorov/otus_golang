@@ -43,30 +43,30 @@ func New(out io.Writer, level string) *Logger {
 
 func (l Logger) Info(msg string) {
 	if l.level >= infoLevel {
-		l.log(msg)
+		l.log(infoLevel, msg)
 	}
 }
 
 func (l Logger) Error(msg string) {
 	if l.level >= errorLevel {
-		l.log(msg)
+		l.log(errorLevel, msg)
 	}
 }
 
 func (l Logger) Warn(msg string) {
 	if l.level >= warnLevel {
-		l.log(msg)
+		l.log(warnLevel, msg)
 	}
 }
 
 func (l Logger) Debug(msg string) {
 	if l.level >= debugLevel {
-		l.log(msg)
+		l.log(debugLevel, msg)
 	}
 }
 
-func (l Logger) log(msg string) {
-	_, err := fmt.Fprintf(l.out, "%s\n", msg)
+func (l Logger) log(level logLevel, msg string) {
+	_, err := fmt.Fprintf(l.out, "[%s] %s\n", level.String(), msg)
 	if err != nil {
 		panic(fmt.Errorf("fatal: logger can't write to its file, err %w", err))
 	}
