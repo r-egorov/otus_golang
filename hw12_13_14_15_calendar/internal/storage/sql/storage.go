@@ -81,7 +81,7 @@ func (s *Storage) SaveEvent(ctx context.Context, event storage.Event) (storage.E
 	)
 	if err != nil {
 		var pgErr *pq.Error
-		if errors.As(err, pgErr) && pgErr.Code == "23505" {
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
 			switch pgErr.Constraint {
 			case "events_pkey":
 				return event, storage.NewErrIDNotUnique(event.ID)
@@ -117,7 +117,7 @@ func (s *Storage) UpdateEvent(ctx context.Context, event storage.Event) (storage
 	)
 	if err != nil {
 		var pgErr *pq.Error
-		if errors.As(err, pgErr) && pgErr.Code == "23505" {
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
 			return event, storage.NewErrDateBusy(event.OwnerID, event.DateTime)
 		}
 	}

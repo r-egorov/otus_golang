@@ -22,17 +22,7 @@ func TestSQLStorage_SaveEvent(t *testing.T) {
 
 	t.Run("basic", func(t *testing.T) {
 		defer truncateTable(t, s.db)
-		loc, err := time.LoadLocation("Europe/Moscow")
-		require.NoError(t, err)
-		date := time.Date(2020, 1, 1, 13, 30, 0, 0, loc)
-		event := storage.Event{
-			ID:          uuid.New(),
-			Title:       "Some title",
-			DateTime:    date,
-			Duration:    time.Hour * 2,
-			Description: "Description",
-			OwnerID:     uuid.New(),
-		}
+		event := generateEvent()
 		gotEvent, err := s.SaveEvent(ctx, event)
 		require.NoError(t, err)
 		require.Equal(t, event, gotEvent)
@@ -40,6 +30,23 @@ func TestSQLStorage_SaveEvent(t *testing.T) {
 		gotEvent, err = selectEvent(s.db, event.ID)
 		require.NoError(t, err)
 		require.Equal(t, event, gotEvent)
+	})
+
+	t.Run("it returns err if ID is not unique", func(t *testing.T) {
+		refEvent := generateEvent()
+		_, err := s.SaveEvent(ctx, refEvent)
+		require.NoError(t, err)
+
+		sameIDEvent := generateEvent()
+		sameIDEvent.ID = refEvent.ID
+		_, err = s.SaveEvent(ctx, sameIDEvent)
+		require.Error(t, err)
+		var errIDNotUnique *storage.ErrIDNotUnique
+		require.ErrorAs(t, err, &errIDNotUnique)
+
+		eventInDB, err := selectEvent(s.db, refEvent.ID)
+		require.NoError(t, err)
+		require.Equal(t, refEvent, eventInDB)
 	})
 }
 
@@ -80,5 +87,16 @@ func selectEvent(db *sql.DB, eventID uuid.UUID) (storage.Event, error) {
 		return event, nil
 	default:
 		return event, err
+	}
+}
+
+func generateEvent() storage.Event {
+	return storage.Event{
+		ID:          uuid.New(),
+		Title:       "New Title",
+		DateTime:    time.Date(2020, 1, 1, 13, 30, 0, 0, time.UTC),
+		Duration:    2 * time.Hour,
+		Description: "New description",
+		OwnerID:     uuid.New(),
 	}
 }
