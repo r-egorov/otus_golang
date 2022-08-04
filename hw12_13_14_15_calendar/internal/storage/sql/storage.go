@@ -3,18 +3,26 @@ package sqlstorage
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
-	"github.com/google/uuid"
-	"github.com/lib/pq"
-	_ "github.com/lib/pq"
-	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/storage"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/jinzhu/now"
+	"github.com/lib/pq"
+	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/storage"
 )
 
 const (
-	insertEventQuery = `INSERT INTO events (id, title, datetime, duration, description, owner_id) VALUES ($1, $2, $3, $4, $5, $6)`
-	updateEventQuery = `UPDATE events SET title = $1, datetime = $2, duration = $3, description = $4, updated_at = now() WHERE id = $5`
-	deleteEventQuery = `DELETE FROM events WHERE id = $1`
+	insertEventQuery = `INSERT INTO events (id, title, datetime, duration, description, owner_id) 
+						VALUES ($1, $2, $3, $4, $5, $6)`
+	updateEventQuery = `UPDATE events 
+						SET title = $1, datetime = $2, duration = $3, description = $4, updated_at = now() 
+						WHERE id = $5`
+	deleteEventQuery          = `DELETE FROM events WHERE id = $1`
+	selectEventsInPeriodQuery = `SELECT id, title, datetime, duration, description, owner_id 
+								FROM events 
+								WHERE datetime BETWEEN $1 AND $2`
 )
 
 type Storage struct {
@@ -38,6 +46,10 @@ func (s *Storage) Connect(ctx context.Context) error {
 		s.User, s.Password, s.Host, s.Port, s.DBName,
 	)
 	db, err := sql.Open("postgres", connStr)
+	if err != nil {
+		return err
+	}
+	err = db.PingContext(ctx)
 	if err != nil {
 		return err
 	}
@@ -68,8 +80,8 @@ func (s *Storage) SaveEvent(ctx context.Context, event storage.Event) (storage.E
 		event.OwnerID,
 	)
 	if err != nil {
-		pgErr, ok := err.(*pq.Error)
-		if ok && pgErr.Code == "23505" {
+		var pgErr *pq.Error
+		if errors.As(err, pgErr) && pgErr.Code == "23505" {
 			switch pgErr.Constraint {
 			case "events_pkey":
 				return event, storage.NewErrIDNotUnique(event.ID)
@@ -104,8 +116,8 @@ func (s *Storage) UpdateEvent(ctx context.Context, event storage.Event) (storage
 		event.ID,
 	)
 	if err != nil {
-		pgErr, ok := err.(*pq.Error)
-		if ok && pgErr.Code == "23505" {
+		var pgErr *pq.Error
+		if errors.As(err, pgErr) && pgErr.Code == "23505" {
 			return event, storage.NewErrDateBusy(event.OwnerID, event.DateTime)
 		}
 	}
@@ -138,6 +150,9 @@ func (s *Storage) DeleteEvent(ctx context.Context, eventID uuid.UUID) error {
 		deleteEventQuery,
 		eventID,
 	)
+	if err != nil {
+		return err
+	}
 
 	ra, err := res.RowsAffected()
 	if err != nil {
@@ -154,10 +169,25 @@ func (s *Storage) DeleteEvent(ctx context.Context, eventID uuid.UUID) error {
 }
 
 func (s *Storage) ListEventsDay(ctx context.Context, day time.Time) ([]storage.Event, error) {
+	dayEnd := now.With(day).EndOfDay()
+	return s.listEventsInPeriod(ctx, day, dayEnd)
+}
+
+func (s *Storage) ListEventsWeek(ctx context.Context, weekStart time.Time) ([]storage.Event, error) {
+	weekEnd := now.With(weekStart).EndOfWeek()
+	return s.listEventsInPeriod(ctx, weekStart, weekEnd)
+}
+
+func (s *Storage) ListEventsMonth(ctx context.Context, monthStart time.Time) ([]storage.Event, error) {
+	monthEnd := now.With(monthStart).EndOfMonth()
+	return s.listEventsInPeriod(ctx, monthStart, monthEnd)
+}
+
+func (s *Storage) listEventsInPeriod(ctx context.Context, start time.Time, end time.Time) ([]storage.Event, error) {
 	rows, err := s.db.QueryContext(
 		ctx,
-		`SELECT id, title, datetime, duration, description, owner_id FROM events WHERE datetime >= $1 AND datetime < ($1 + INTERVAL '1 DAY')`,
-		day,
+		selectEventsInPeriodQuery,
+		start, end,
 	)
 	if err != nil {
 		return []storage.Event{}, err
@@ -198,11 +228,4 @@ func (s *Storage) ListEventsDay(ctx context.Context, day time.Time) ([]storage.E
 		return []storage.Event{}, rows.Err()
 	}
 	return res, nil
-}
-
-func (s *Storage) ListEventsWeek(ctx context.Context, weekStart time.Time) ([]storage.Event, error) {
-	return []storage.Event{}, nil
-}
-func (s *Storage) ListEventsMonth(ctx context.Context, monthStart time.Time) ([]storage.Event, error) {
-	return []storage.Event{}, nil
 }
