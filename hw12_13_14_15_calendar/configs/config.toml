@@ -6,7 +6,7 @@ file = "stdout"
 storage_type = "psql"
 user = "postgres"
 password = "postgres"
-db = "otus"
+db = "calendar"
 host = "localhost"
 port = "5432"
 
