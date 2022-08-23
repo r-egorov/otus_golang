@@ -65,6 +65,7 @@ func main() {
 	httpserver := internalhttp.NewServer(logg, calendar, conf.HttpServer.Host, conf.HttpServer.Port)
 	grpcserver := internalgrpc.NewService(logg, calendar, conf.GrpcServer.Host, conf.GrpcServer.Port)
 
+	// Start API servers
 	httpserver.Start(ctx)
 	if err := grpcserver.Start(ctx); err != nil {
 		logg.Fatal("failed to start grpc server: " + err.Error())
@@ -74,6 +75,7 @@ func main() {
 
 	<-ctx.Done()
 
+	// Stop API Servers
 	ctxStop, cancel := context.WithTimeout(context.Background(), time.Second*3)
 	defer cancel()
 

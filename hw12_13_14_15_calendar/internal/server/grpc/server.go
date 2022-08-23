@@ -28,7 +28,7 @@ func NewService(logger server.Logger, app server.Application, host, port string)
 		port: port,
 	}
 
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(logInterceptor(logger)))
 	RegisterEventsServer(grpcServer, service)
 
 	service.serv = grpcServer
