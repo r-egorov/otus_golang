@@ -35,13 +35,13 @@ type Storage interface {
 }
 
 type App struct {
+	Logg    Logger
 	ctx     context.Context
-	logg    Logger
 	storage Storage
 	conf    config.Config
 }
 
-func New(logg Logger, conf config.Config) *App {
+func New(Logg Logger, conf config.Config) *App {
 	var storage Storage
 	switch conf.Storage.StorageType {
 	case config.PSQLStorageType:
@@ -58,7 +58,7 @@ func New(logg Logger, conf config.Config) *App {
 
 	return &App{
 		ctx:     context.Background(),
-		logg:    logg,
+		Logg:    Logg,
 		storage: storage,
 		conf:    conf,
 	}
@@ -69,7 +69,7 @@ func (a *App) Run() {
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 	defer cancel()
 
-	httpserver := internalhttp.NewServer(a.logg, a, a.conf.Server.Host, a.conf.Server.Port)
+	httpserver := internalhttp.NewServer(a.Logg, a, a.conf.Server.Host, a.conf.Server.Port)
 
 	serverStopped := make(chan struct{})
 	go func() {
@@ -79,33 +79,103 @@ func (a *App) Run() {
 		defer cancel()
 
 		if err := httpserver.Stop(ctx); err != nil {
-			a.logg.Error("failed to stop http server: " + err.Error())
+			a.Logg.Error("failed to stop http server: " + err.Error())
 		}
 		serverStopped <- struct{}{}
 	}()
 
-	a.logg.Info("calendar is running...")
+	a.Logg.Info("calendar is running...")
 
 	if err := httpserver.Start(ctx); err != nil {
-		a.logg.Error("failed to start http server: " + err.Error())
+		a.Logg.Error("failed to start http server: " + err.Error())
 		cancel()
 		os.Exit(1)
 	}
 	<-serverStopped
 }
 
-func (a *App) CreateEvent(ctx context.Context, id uuid.UUID, title string) (storage.Event, error) {
-	event, err := a.storage.SaveEvent(ctx, storage.Event{ID: id, Title: title})
+func (a *App) SaveEvent(ctx context.Context, event storage.Event) (storage.Event, error) {
+	event, err := a.storage.SaveEvent(ctx, event)
 	if err != nil {
-		a.logg.Error(
+		a.Logg.Error(
 			fmt.Sprintf(
-				"can't create event ID: %s, Title: %s, err: %v",
-				id, title, err),
+				"can't save %s, err: %v",
+				event, err),
 		)
 		return storage.Event{}, err
 	}
-	a.logg.Info(fmt.Sprintf("created event ID: %s, Title: %s", id, title))
+	a.Logg.Info(fmt.Sprintf("saved %s", event))
 	return event, nil
 }
 
-// TODO
+func (a *App) UpdateEvent(ctx context.Context, event storage.Event) (storage.Event, error) {
+	event, err := a.storage.UpdateEvent(ctx, event)
+	if err != nil {
+		a.Logg.Error(
+			fmt.Sprintf(
+				"can't update %s, err: %v",
+				event, err),
+		)
+		return storage.Event{}, err
+	}
+	a.Logg.Info(fmt.Sprintf("updated %s", event))
+	return event, nil
+}
+
+func (a *App) DeleteEvent(ctx context.Context, eventID uuid.UUID) error {
+	err := a.storage.DeleteEvent(ctx, eventID)
+	if err != nil {
+		a.Logg.Error(
+			fmt.Sprintf(
+				"can't delete event, err: %v",
+				err),
+		)
+		return err
+	}
+	a.Logg.Info(fmt.Sprintf("deleted event, ID: %s", eventID.String()))
+	return nil
+}
+
+func (a *App) listEvents(
+	ctx context.Context,
+	listFunc func(context.Context, time.Time) ([]storage.Event, error),
+	startPeriod time.Time,
+) ([]storage.Event, error) {
+	events, err := listFunc(ctx, startPeriod)
+	if err != nil {
+		a.Logg.Error(
+			fmt.Sprintf(
+				"can't get events list, err: %v",
+				err),
+		)
+		return nil, err
+	}
+	return events, nil
+}
+
+func (a *App) ListEventsDay(ctx context.Context, dayStart time.Time) ([]storage.Event, error) {
+	events, err := a.listEvents(ctx, a.storage.ListEventsDay, dayStart)
+	if err != nil {
+		return nil, err
+	}
+	a.Logg.Info(fmt.Sprintf("got events list for day: %s", dayStart.Format("2006-01-02 15:04:05")))
+	return events, nil
+}
+
+func (a *App) ListEventsWeek(ctx context.Context, weekStart time.Time) ([]storage.Event, error) {
+	events, err := a.listEvents(ctx, a.storage.ListEventsWeek, weekStart)
+	if err != nil {
+		return nil, err
+	}
+	a.Logg.Info(fmt.Sprintf("got events list for week: %s", weekStart.Format("2006-01-02 15:04:05")))
+	return events, nil
+}
+
+func (a *App) ListEventsMonth(ctx context.Context, monthStart time.Time) ([]storage.Event, error) {
+	events, err := a.listEvents(ctx, a.storage.ListEventsMonth, monthStart)
+	if err != nil {
+		return nil, err
+	}
+	a.Logg.Info(fmt.Sprintf("got events list for month: %s", monthStart.Format("2006-01-02 15:04:05")))
+	return events, nil
+}
