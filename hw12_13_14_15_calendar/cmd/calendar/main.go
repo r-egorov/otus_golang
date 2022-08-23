@@ -62,8 +62,8 @@ func main() {
 	}()
 
 	// Configure API servers
-	httpserver := internalhttp.NewServer(logg, calendar, conf.Server.Host, conf.Server.Port)
-	grpcserver := internalgrpc.NewService(logg, calendar, conf.Server.Host, "9000") // FIXME
+	httpserver := internalhttp.NewServer(logg, calendar, conf.HttpServer.Host, conf.HttpServer.Port)
+	grpcserver := internalgrpc.NewService(logg, calendar, conf.GrpcServer.Host, conf.GrpcServer.Port)
 
 	httpserver.Start(ctx)
 	if err := grpcserver.Start(ctx); err != nil {

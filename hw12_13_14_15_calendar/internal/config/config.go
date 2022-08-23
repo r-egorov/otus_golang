@@ -7,9 +7,10 @@ import (
 )
 
 type Config struct {
-	Logger  LoggerConf
-	Storage StorageConf
-	Server  ServerConf
+	Logger     LoggerConf
+	Storage    StorageConf
+	HttpServer ServerConf
+	GrpcServer ServerConf
 }
 
 type LoggerConf struct {
@@ -40,9 +41,13 @@ func NewConfig(configFilePath string) (Config, error) {
 	viper.SetDefault("storage", map[string]string{
 		"storage_type": InmemoryStorageType,
 	})
-	viper.SetDefault("server", map[string]string{
+	viper.SetDefault("http", map[string]string{
 		"host": "localhost",
 		"port": "8000",
+	})
+	viper.SetDefault("grpc", map[string]string{
+		"host": "localhost",
+		"port": "9000",
 	})
 
 	viper.SetConfigType(configType)
@@ -56,11 +61,13 @@ func NewConfig(configFilePath string) (Config, error) {
 		return Config{}, err
 	}
 	logger := parseLoggerMap(viper.GetStringMapString("logger"))
-	server := parseServerMap(viper.GetStringMapString("server"))
+	httpServer := parseServerMap(viper.GetStringMapString("http"))
+	grpcServer := parseServerMap(viper.GetStringMapString("grpc"))
 	return Config{
-		Logger:  logger,
-		Storage: storage,
-		Server:  server,
+		Logger:     logger,
+		Storage:    storage,
+		HttpServer: httpServer,
+		GrpcServer: grpcServer,
 	}, nil
 }
 

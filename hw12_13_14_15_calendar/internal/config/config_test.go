@@ -30,9 +30,13 @@ func TestConfig(t *testing.T) {
 					Port:        "6543",
 					DBName:      "db",
 				},
-				Server: ServerConf{
+				HttpServer: ServerConf{
 					Host: "0.0.0.0",
 					Port: "1234",
+				},
+				GrpcServer: ServerConf{
+					Host: "0.0.0.0",
+					Port: "4321",
 				},
 			},
 		},
@@ -46,9 +50,13 @@ func TestConfig(t *testing.T) {
 				Storage: StorageConf{
 					StorageType: "inmemory",
 				},
-				Server: ServerConf{
+				HttpServer: ServerConf{
 					Host: "0.0.0.0",
 					Port: "1234",
+				},
+				GrpcServer: ServerConf{
+					Host: "0.0.0.0",
+					Port: "4321",
 				},
 			},
 		},
@@ -75,9 +83,13 @@ func TestConfig(t *testing.T) {
 			Storage: StorageConf{
 				StorageType: "inmemory",
 			},
-			Server: ServerConf{
+			HttpServer: ServerConf{
 				Host: "localhost",
 				Port: "8000",
+			},
+			GrpcServer: ServerConf{
+				Host: "localhost",
+				Port: "9000",
 			},
 		}
 		te := setUpTestEnv(t, ``)
@@ -195,7 +207,11 @@ db = "%s"
 host = "%s"
 port = "%s"
 
-[server]
+[http]
+host = "%s"
+port = "%s"
+
+[grpc]
 host = "%s"
 port = "%s"
 `,
@@ -207,7 +223,9 @@ port = "%s"
 		c.Storage.DBName,
 		c.Storage.Host,
 		c.Storage.Port,
-		c.Server.Host,
-		c.Server.Port,
+		c.HttpServer.Host,
+		c.HttpServer.Port,
+		c.GrpcServer.Host,
+		c.GrpcServer.Port,
 	)
 }
