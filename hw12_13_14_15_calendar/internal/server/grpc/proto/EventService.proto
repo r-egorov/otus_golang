@@ -44,7 +44,7 @@ message ListRequest {
 }
 
 message ListResponse {
-    repeated Event event = 1;
+    repeated Event events = 1;
 }
 
 service Events {
