@@ -3,7 +3,10 @@ package internalhttp
 import (
 	"context"
 	"fmt"
+	"github.com/google/uuid"
+	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/storage"
 	"net/http"
+	"time"
 )
 
 type Server struct {
@@ -20,7 +23,13 @@ type Logger interface {
 	Debug(msg string)
 }
 
-type Application interface { // TODO
+type Application interface {
+	SaveEvent(ctx context.Context, event storage.Event) (storage.Event, error)
+	UpdateEvent(ctx context.Context, event storage.Event) (storage.Event, error)
+	DeleteEvent(ctx context.Context, eventID uuid.UUID) error
+	ListEventsDay(ctx context.Context, dayStart time.Time) ([]storage.Event, error)
+	ListEventsWeek(ctx context.Context, weekStart time.Time) ([]storage.Event, error)
+	ListEventsMonth(ctx context.Context, monthStart time.Time) ([]storage.Event, error)
 }
 
 func NewServer(logger Logger, app Application, host, port string) *Server {

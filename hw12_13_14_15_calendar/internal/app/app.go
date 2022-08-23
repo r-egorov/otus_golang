@@ -4,12 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/config"
-	internalhttp "github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/server/http"
 	memorystorage "github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/storage/memory"
 	sqlstorage "github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/storage/sql"
-	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
 	"github.com/google/uuid"
@@ -36,7 +32,6 @@ type Storage interface {
 
 type App struct {
 	Logg    Logger
-	ctx     context.Context
 	storage Storage
 	conf    config.Config
 }
@@ -57,41 +52,10 @@ func New(Logg Logger, conf config.Config) *App {
 	}
 
 	return &App{
-		ctx:     context.Background(),
 		Logg:    Logg,
 		storage: storage,
 		conf:    conf,
 	}
-}
-
-func (a *App) Run() {
-	ctx, cancel := signal.NotifyContext(a.ctx,
-		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
-	defer cancel()
-
-	httpserver := internalhttp.NewServer(a.Logg, a, a.conf.Server.Host, a.conf.Server.Port)
-
-	serverStopped := make(chan struct{})
-	go func() {
-		<-ctx.Done()
-
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
-		defer cancel()
-
-		if err := httpserver.Stop(ctx); err != nil {
-			a.Logg.Error("failed to stop http server: " + err.Error())
-		}
-		serverStopped <- struct{}{}
-	}()
-
-	a.Logg.Info("calendar is running...")
-
-	if err := httpserver.Start(ctx); err != nil {
-		a.Logg.Error("failed to start http server: " + err.Error())
-		cancel()
-		os.Exit(1)
-	}
-	<-serverStopped
 }
 
 func (a *App) SaveEvent(ctx context.Context, event storage.Event) (storage.Event, error) {
