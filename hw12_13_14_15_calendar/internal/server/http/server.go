@@ -2,6 +2,7 @@ package internalhttp
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/server"
 	"net/http"
@@ -29,22 +30,13 @@ func NewServer(logger server.Logger, app server.Application, host, port string) 
 	}
 }
 
-func (s *Server) Start(ctx context.Context) error {
-	errChan := make(chan error)
-
+func (s *Server) Start(ctx context.Context) {
 	go func() {
-		if err := s.srv.ListenAndServe(); err != nil {
-			errChan <- err
+		if err := s.srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			s.log.Fatal("failed to start http server: " + err.Error())
 		}
 	}()
-
 	s.log.Info(fmt.Sprintf("serving at %s", s.srv.Addr))
-	select {
-	case err := <-errChan:
-		return err
-	case <-ctx.Done():
-	}
-	return nil
 }
 
 func (s *Server) Stop(ctx context.Context) error {

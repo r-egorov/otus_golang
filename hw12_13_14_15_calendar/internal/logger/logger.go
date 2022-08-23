@@ -3,19 +3,21 @@ package logger
 import (
 	"fmt"
 	"io"
+	"os"
 )
 
 type logLevel int
 
 const (
-	errorLevel = iota
+	fatalLevel = iota
+	errorLevel
 	warnLevel
 	infoLevel
 	debugLevel
 )
 
 func (l logLevel) String() string {
-	return [...]string{"ERROR", "WARN", "INFO", "DEBUG"}[l]
+	return [...]string{"FATAL", "ERROR", "WARN", "INFO", "DEBUG"}[l]
 }
 
 type Logger struct {
@@ -26,6 +28,8 @@ type Logger struct {
 func New(out io.Writer, level string) *Logger {
 	var levelCode logLevel
 	switch level {
+	case "FATAL":
+		levelCode = fatalLevel
 	case "ERROR":
 		levelCode = errorLevel
 	case "WARN":
@@ -63,6 +67,11 @@ func (l Logger) Debug(msg string) {
 	if l.level >= debugLevel {
 		l.log(debugLevel, msg)
 	}
+}
+
+func (l Logger) Fatal(msg string) {
+	l.log(fatalLevel, msg)
+	os.Exit(1)
 }
 
 func (l Logger) log(level logLevel, msg string) {

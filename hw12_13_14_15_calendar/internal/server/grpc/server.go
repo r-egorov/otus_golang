@@ -28,7 +28,7 @@ func NewService(logger server.Logger, app server.Application, host, port string)
 		port: port,
 	}
 
-	grpcServer := grpc.NewServer(nil)
+	grpcServer := grpc.NewServer()
 	RegisterEventsServer(grpcServer, service)
 
 	service.serv = grpcServer
@@ -41,19 +41,12 @@ func (s *Service) Start(ctx context.Context) error {
 		return err
 	}
 
-	errChan := make(chan error)
 	go func() {
 		if err := s.serv.Serve(lsn); err != nil {
-			errChan <- err
+			s.logg.Fatal("failed to start gRPC server: " + err.Error())
 		}
 	}()
-
 	s.logg.Info(fmt.Sprintf("gRPC serving at %s:%s", s.host, s.port))
-	select {
-	case err := <-errChan:
-		return err
-	case <-ctx.Done():
-	}
 	return nil
 }
 
@@ -138,11 +131,11 @@ func (s *Service) ListMonth(ctx context.Context, req *ListRequest) (*ListRespons
 }
 
 func mapEventProtoToNative(event *Event) (*storage.Event, error) {
-	eventID, err := uuid.FromBytes([]byte(event.GetId()))
+	eventID, err := uuid.Parse(event.GetId())
 	if err != nil {
 		return nil, err
 	}
-	ownerID, err := uuid.FromBytes([]byte(event.GetOwnerId()))
+	ownerID, err := uuid.Parse(event.GetOwnerId())
 	if err != nil {
 		return nil, err
 	}
@@ -169,8 +162,8 @@ func mapEventNativeToProto(event *storage.Event) *Event {
 
 func mapEventsNativeToProto(events []storage.Event) []*Event {
 	eventsProto := make([]*Event, len(events))
-	for _, event := range events {
-		eventsProto = append(eventsProto, mapEventNativeToProto(&event))
+	for i, event := range events {
+		eventsProto[i] = mapEventNativeToProto(&event)
 	}
 	return eventsProto
 }

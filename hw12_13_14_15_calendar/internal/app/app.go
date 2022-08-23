@@ -37,10 +37,10 @@ type App struct {
 }
 
 func New(Logg Logger, conf config.Config) *App {
-	var storage Storage
+	var store Storage
 	switch conf.Storage.StorageType {
 	case config.PSQLStorageType:
-		storage = sqlstorage.New(
+		store = sqlstorage.New(
 			conf.Storage.User,
 			conf.Storage.Password,
 			conf.Storage.DBName,
@@ -48,14 +48,22 @@ func New(Logg Logger, conf config.Config) *App {
 			conf.Storage.Port,
 		)
 	default:
-		storage = memorystorage.New()
+		store = memorystorage.New()
 	}
 
 	return &App{
 		Logg:    Logg,
-		storage: storage,
+		storage: store,
 		conf:    conf,
 	}
+}
+
+func (a *App) ConnectToStorage(ctx context.Context) error {
+	return a.storage.Connect(ctx)
+}
+
+func (a *App) DisconnectFromStorage(ctx context.Context) error {
+	return a.storage.Close(ctx)
 }
 
 func (a *App) SaveEvent(ctx context.Context, event storage.Event) (storage.Event, error) {

@@ -7,6 +7,7 @@ import (
 	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/app"
 	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/config"
 	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/logger"
+	internalgrpc "github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/server/grpc"
 	internalhttp "github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/server/http"
 	"log"
 	"os"
@@ -34,6 +35,7 @@ func main() {
 		log.Fatalf("config: %s", err.Error()) //nolint:gocritic
 	}
 
+	// Configure logger
 	logOut, logOutClose := getLogWriter(conf)
 	defer func() {
 		if err := logOutClose(); err != nil {
@@ -42,35 +44,43 @@ func main() {
 	}()
 	logg := logger.New(logOut, conf.Logger.Level)
 
-	calendar := app.New(logg, conf)
-
+	// Configure global context to watch the signals
 	ctx, cancel := signal.NotifyContext(context.Background(),
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 	defer cancel()
 
-	httpserver := internalhttp.NewServer(logg, calendar, conf.Server.Host, conf.Server.Port)
-
-	serverStopped := make(chan struct{})
-	go func() {
-		<-ctx.Done()
-
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
-		defer cancel()
-
-		if err := httpserver.Stop(ctx); err != nil {
-			logg.Error("failed to stop http server: " + err.Error())
+	// Configure Application
+	calendar := app.New(logg, conf)
+	if err = calendar.ConnectToStorage(ctx); err != nil {
+		logg.Fatal("can't connect to the storage")
+	}
+	defer func() {
+		err := calendar.DisconnectFromStorage(ctx)
+		if err != nil {
+			logg.Fatal("can't disconnect from the storage")
 		}
-		serverStopped <- struct{}{}
 	}()
+
+	// Configure API servers
+	httpserver := internalhttp.NewServer(logg, calendar, conf.Server.Host, conf.Server.Port)
+	grpcserver := internalgrpc.NewService(logg, calendar, conf.Server.Host, "9000") // FIXME
+
+	httpserver.Start(ctx)
+	if err := grpcserver.Start(ctx); err != nil {
+		logg.Fatal("failed to start grpc server: " + err.Error())
+	}
 
 	logg.Info("calendar is running...")
 
-	if err := httpserver.Start(ctx); err != nil {
-		logg.Error("failed to start http server: " + err.Error())
-		cancel()
-		os.Exit(1)
+	<-ctx.Done()
+
+	ctxStop, cancel := context.WithTimeout(context.Background(), time.Second*3)
+	defer cancel()
+
+	if err := httpserver.Stop(ctxStop); err != nil {
+		logg.Error("failed to stop http server: " + err.Error())
 	}
-	<-serverStopped
+	grpcserver.Stop(ctxStop)
 }
 
 func getLogWriter(c config.Config) (out *os.File, outClose func() error) {

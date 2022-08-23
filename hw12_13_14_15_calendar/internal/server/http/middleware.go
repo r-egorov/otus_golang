@@ -2,11 +2,12 @@ package internalhttp
 
 import (
 	"fmt"
+	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/server"
 	"net/http"
 	"time"
 )
 
-func loggingMiddleware(next http.Handler, log Logger) http.Handler {
+func loggingMiddleware(next http.Handler, log server.Logger) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		next.ServeHTTP(w, r)
