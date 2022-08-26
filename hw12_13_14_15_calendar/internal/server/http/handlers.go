@@ -48,8 +48,8 @@ func createEventsHandler(app server.Application) func(http.ResponseWriter, *http
 			return
 		}
 
-		var event storage.Event
-		err := json.NewDecoder(r.Body).Decode(&event)
+		var request CreateEventRequest
+		err := json.NewDecoder(r.Body).Decode(&request)
 		if err != nil {
 			writeError(w, err, http.StatusBadRequest)
 			return
@@ -58,6 +58,7 @@ func createEventsHandler(app server.Application) func(http.ResponseWriter, *http
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 		defer cancel()
 
+		event := request.Event
 		event.ID = uuid.New()
 		saved, err := app.SaveEvent(ctx, event)
 		if err != nil {
@@ -65,8 +66,9 @@ func createEventsHandler(app server.Application) func(http.ResponseWriter, *http
 			return
 		}
 
+		response := CreateEventResponse{Event: saved}
 		w.WriteHeader(http.StatusCreated)
-		err = json.NewEncoder(w).Encode(saved)
+		err = json.NewEncoder(w).Encode(response)
 		if err != nil {
 			writeServerError(w)
 			return

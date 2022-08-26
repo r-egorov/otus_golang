@@ -101,7 +101,7 @@ func Test_CreateEvent(t *testing.T) {
 		)
 
 		reqBody := &bytes.Buffer{}
-		err := json.NewEncoder(reqBody).Encode(expected)
+		err := json.NewEncoder(reqBody).Encode(CreateEventRequest{Event: expected})
 		require.NoError(t, err)
 
 		req, err := http.NewRequest("POST", "/events", reqBody)
@@ -111,10 +111,11 @@ func Test_CreateEvent(t *testing.T) {
 		mux.ServeHTTP(rr, req)
 		require.Equal(t, http.StatusCreated, rr.Code)
 
-		got := storage.Event{}
-		err = json.NewDecoder(rr.Body).Decode(&got)
+		response := CreateEventResponse{}
+		err = json.NewDecoder(rr.Body).Decode(&response)
 		require.NoError(t, err)
 
+		got := response.Event
 		expected.ID = got.ID
 		require.Equal(t, expected, got)
 
@@ -132,10 +133,12 @@ func Test_CreateEvent(t *testing.T) {
 
 		reqBody := &bytes.Buffer{}
 		reqBody.WriteString(`{
-"title":"test created",
-"datetime":"2022-03-01T00:00:00Z","duration":7200000000000,
-"description":"test description",
-"owner_id":"61b662df-7661-496f-8ada-8a04d1bfe78a"
+"event": {
+		"title":"test created",
+		"datetime":"2022-03-01T00:00:00Z","duration":7200000000000,
+		"description":"test description",
+		"owner_id":"61b662df-7661-496f-8ada-8a04d1bfe78a"
+	}
 }`)
 
 		req, err := http.NewRequest("POST", "/events", reqBody)
@@ -145,9 +148,11 @@ func Test_CreateEvent(t *testing.T) {
 		mux.ServeHTTP(rr, req)
 		require.Equal(t, http.StatusCreated, rr.Code)
 
-		got := storage.Event{}
-		err = json.NewDecoder(rr.Body).Decode(&got)
+		response := CreateEventResponse{}
+		err = json.NewDecoder(rr.Body).Decode(&response)
 		require.NoError(t, err)
+
+		got := response.Event
 		require.NotEqual(t, uuid.Nil, got.ID)
 	})
 
