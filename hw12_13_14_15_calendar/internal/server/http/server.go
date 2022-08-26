@@ -15,14 +15,8 @@ type Server struct {
 	host, port string
 }
 
-func newRouter() *http.ServeMux {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/hello", hello)
-	return mux
-}
-
 func NewServer(logger server.Logger, app server.Application, host, port string) *Server {
-	mux := newRouter()
+	mux := newRouter(app)
 	srv := &http.Server{Addr: host + ":" + port, Handler: loggingMiddleware(mux, logger)}
 	return &Server{
 		srv:  srv,

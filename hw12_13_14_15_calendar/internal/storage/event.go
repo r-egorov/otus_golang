@@ -8,12 +8,12 @@ import (
 )
 
 type Event struct {
-	ID          uuid.UUID
-	Title       string
-	DateTime    time.Time
-	Duration    time.Duration
-	Description string
-	OwnerID     uuid.UUID
+	ID          uuid.UUID     `json:"id"`
+	Title       string        `json:"title"`
+	DateTime    time.Time     `json:"datetime"`
+	Duration    time.Duration `json:"duration"`
+	Description string        `json:"description"`
+	OwnerID     uuid.UUID     `json:"owner_id"`
 	// NotifyBefore time.Duration
 }
 
