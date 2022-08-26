@@ -88,7 +88,7 @@ func Test_CreateEvent(t *testing.T) {
 		s := memorystorage.New()
 		a := newMockApp(s)
 		mux := http.NewServeMux()
-		mux.HandleFunc("/events", createEventsHandler(&a))
+		mux.HandleFunc("/events", eventsHandler(&a))
 
 		datetime := time.Date(2022, time.Month(3), 1, 0, 0, 0, 0, time.UTC)
 		expected := generateEvent(
@@ -129,7 +129,7 @@ func Test_CreateEvent(t *testing.T) {
 		s := memorystorage.New()
 		a := newMockApp(s)
 		mux := http.NewServeMux()
-		mux.HandleFunc("/events", createEventsHandler(&a))
+		mux.HandleFunc("/events", eventsHandler(&a))
 
 		reqBody := &bytes.Buffer{}
 		reqBody.WriteString(`{
@@ -155,12 +155,63 @@ func Test_CreateEvent(t *testing.T) {
 		got := response.Event
 		require.NotEqual(t, uuid.Nil, got.ID)
 	})
+}
 
+func Test_UpdateEvent(t *testing.T) {
+	t.Run("updates event", func(t *testing.T) {
+		s := memorystorage.New()
+		a := newMockApp(s)
+		mux := http.NewServeMux()
+		mux.HandleFunc("/events", eventsHandler(&a))
+		ctx := context.Background()
+
+		datetime := time.Date(2022, time.Month(3), 1, 0, 0, 0, 0, time.UTC)
+		event := generateEvent(
+			uuid.New(),
+			"test created",
+			datetime,
+			time.Hour*2,
+			"test description",
+			uuid.New(),
+		)
+		event, err := s.SaveEvent(ctx, event)
+		require.NoError(t, err)
+
+		event.Title = "updated title"
+		event.Description = "updated description"
+		event.Duration = time.Second * 30
+
+		reqBody := &bytes.Buffer{}
+		err = json.NewEncoder(reqBody).Encode(UpdateEventRequest{Event: event})
+		require.NoError(t, err)
+
+		req, err := http.NewRequest("PATCH", "/events", reqBody)
+		require.NoError(t, err)
+
+		rr := httptest.NewRecorder()
+		mux.ServeHTTP(rr, req)
+		require.Equal(t, http.StatusOK, rr.Code)
+
+		response := UpdateEventResponse{}
+		err = json.NewDecoder(rr.Body).Decode(&response)
+		require.NoError(t, err)
+
+		got := response.Event
+		require.Equal(t, event, got)
+
+		inStore, err := s.ListEventsDay(context.Background(), datetime)
+		require.NoError(t, err)
+		require.Equal(t, 1, len(inStore))
+		require.Equal(t, got, inStore[0])
+	})
+}
+
+func Test_Events_MethodNotAllowed(t *testing.T) {
 	t.Run("method not allowed", func(t *testing.T) {
 		s := memorystorage.New()
 		a := newMockApp(s)
 		mux := http.NewServeMux()
-		mux.HandleFunc("/events", createEventsHandler(&a))
+		mux.HandleFunc("/events", eventsHandler(&a))
 
 		req, err := http.NewRequest("GET", "/events", nil)
 		require.NoError(t, err)
