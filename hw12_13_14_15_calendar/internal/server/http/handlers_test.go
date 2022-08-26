@@ -106,15 +106,7 @@ func Test_CreateEvent(t *testing.T) {
 	t.Run("creates event", func(t *testing.T) {
 		te := setUpTestEnv()
 
-		datetime := time.Date(2022, time.Month(3), 1, 0, 0, 0, 0, time.UTC)
-		expected := generateEvent(
-			uuid.New(),
-			"test created",
-			datetime,
-			time.Hour*2,
-			"test description",
-			uuid.New(),
-		)
+		expected := generateEvent()
 
 		reqBody := &bytes.Buffer{}
 		err := json.NewEncoder(reqBody).Encode(CreateEventRequest{Event: expected})
@@ -135,7 +127,7 @@ func Test_CreateEvent(t *testing.T) {
 		expected.ID = got.ID
 		require.Equal(t, expected, got)
 
-		saved, err := te.storage.ListEventsDay(context.Background(), datetime)
+		saved, err := te.storage.ListEventsDay(context.Background(), expected.DateTime)
 		require.NoError(t, err)
 		require.Equal(t, 1, len(saved))
 		require.Equal(t, expected, saved[0])
@@ -176,24 +168,17 @@ func Test_UpdateEvent(t *testing.T) {
 
 		ctx := context.Background()
 
-		datetime := time.Date(2022, time.Month(3), 1, 0, 0, 0, 0, time.UTC)
-		event := generateEvent(
-			uuid.New(),
-			"test created",
-			datetime,
-			time.Hour*2,
-			"test description",
-			uuid.New(),
-		)
-		event, err := te.storage.SaveEvent(ctx, event)
+		expected := generateEvent()
+		expected, err := te.storage.SaveEvent(ctx, expected)
 		require.NoError(t, err)
 
-		event.Title = "updated title"
-		event.Description = "updated description"
-		event.Duration = time.Second * 30
+		toUpdate := expected
+		toUpdate.Title = "updated title"
+		toUpdate.Description = "updated description"
+		toUpdate.Duration = time.Second * 30
 
 		reqBody := &bytes.Buffer{}
-		err = json.NewEncoder(reqBody).Encode(UpdateEventRequest{Event: event})
+		err = json.NewEncoder(reqBody).Encode(UpdateEventRequest{Event: toUpdate})
 		require.NoError(t, err)
 
 		req, err := http.NewRequest("PATCH", "/events", reqBody)
@@ -208,9 +193,9 @@ func Test_UpdateEvent(t *testing.T) {
 		require.NoError(t, err)
 
 		got := response.Event
-		require.Equal(t, event, got)
+		require.Equal(t, toUpdate, got)
 
-		inStore, err := te.storage.ListEventsDay(context.Background(), datetime)
+		inStore, err := te.storage.ListEventsDay(context.Background(), expected.DateTime)
 		require.NoError(t, err)
 		require.Equal(t, 1, len(inStore))
 		require.Equal(t, got, inStore[0])
@@ -220,14 +205,7 @@ func Test_UpdateEvent(t *testing.T) {
 		te := setUpTestEnv()
 
 		ctx := context.Background()
-		event := generateEvent(
-			uuid.New(),
-			"test created",
-			time.Date(2022, time.Month(3), 1, 0, 0, 0, 0, time.UTC),
-			time.Hour*2,
-			"test description",
-			uuid.New(),
-		)
+		event := generateEvent()
 		event, err := te.storage.SaveEvent(ctx, event)
 		require.NoError(t, err)
 
@@ -272,20 +250,13 @@ func Test_Events_MethodNotAllowed(t *testing.T) {
 	})
 }
 
-func generateEvent(
-	id uuid.UUID,
-	title string,
-	datetime time.Time,
-	duration time.Duration,
-	descritpion string,
-	ownerID uuid.UUID,
-) storage.Event {
+func generateEvent() storage.Event {
 	return storage.Event{
-		ID:          id,
-		Title:       title,
-		DateTime:    datetime,
-		Duration:    duration,
-		Description: descritpion,
-		OwnerID:     ownerID,
+		ID:          uuid.New(),
+		Title:       "test created",
+		DateTime:    time.Date(2022, time.Month(3), 1, 0, 0, 0, 0, time.UTC),
+		Duration:    time.Hour * 2,
+		Description: "test description",
+		OwnerID:     uuid.New(),
 	}
 }
