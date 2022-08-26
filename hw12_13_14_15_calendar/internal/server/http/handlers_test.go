@@ -165,7 +165,6 @@ func Test_CreateEvent(t *testing.T) {
 func Test_UpdateEvent(t *testing.T) {
 	t.Run("updates event", func(t *testing.T) {
 		te := setUpTestEnv()
-
 		ctx := context.Background()
 
 		expected := generateEvent()
@@ -203,8 +202,8 @@ func Test_UpdateEvent(t *testing.T) {
 
 	t.Run("event ID not found", func(t *testing.T) {
 		te := setUpTestEnv()
-
 		ctx := context.Background()
+
 		event := generateEvent()
 		event, err := te.storage.SaveEvent(ctx, event)
 		require.NoError(t, err)
@@ -233,6 +232,56 @@ func Test_UpdateEvent(t *testing.T) {
 
 		got := response.Detail
 		require.Equal(t, expectedErr.Error(), got)
+	})
+}
+
+func Test_DeleteEvent(t *testing.T) {
+	t.Run("deletes event", func(t *testing.T) {
+		te := setUpTestEnv()
+		ctx := context.Background()
+
+		expected := generateEvent()
+		expected, err := te.storage.SaveEvent(ctx, expected)
+		require.NoError(t, err)
+
+		req, err := http.NewRequest("DELETE", "/events", nil)
+		require.NoError(t, err)
+
+		q := req.URL.Query()
+		q.Add("id", expected.ID.String())
+		req.URL.RawQuery = q.Encode()
+
+		rr := httptest.NewRecorder()
+		te.mux.ServeHTTP(rr, req)
+		require.Equal(t, http.StatusOK, rr.Code)
+
+		saved, err := te.storage.ListEventsDay(context.Background(), expected.DateTime)
+		require.NoError(t, err)
+		require.Equal(t, 0, len(saved))
+	})
+
+	t.Run("it returns 404 if not found", func(t *testing.T) {
+		te := setUpTestEnv()
+		ctx := context.Background()
+
+		expected := generateEvent()
+		expected, err := te.storage.SaveEvent(ctx, expected)
+		require.NoError(t, err)
+
+		req, err := http.NewRequest("DELETE", "/events", nil)
+		require.NoError(t, err)
+
+		q := req.URL.Query()
+		q.Add("id", uuid.New().String())
+		req.URL.RawQuery = q.Encode()
+
+		rr := httptest.NewRecorder()
+		te.mux.ServeHTTP(rr, req)
+		require.Equal(t, http.StatusNotFound, rr.Code)
+
+		saved, err := te.storage.ListEventsDay(context.Background(), expected.DateTime)
+		require.NoError(t, err)
+		require.Equal(t, 1, len(saved))
 	})
 }
 

@@ -12,26 +12,6 @@ import (
 	"time"
 )
 
-type ErrorResponse struct {
-	Detail string `json:"detail"`
-}
-
-type CreateEventRequest struct {
-	Event storage.Event `json:"event"`
-}
-
-type CreateEventResponse struct {
-	Event storage.Event `json:"event"`
-}
-
-type UpdateEventRequest struct {
-	Event storage.Event `json:"event"`
-}
-
-type UpdateEventResponse struct {
-	Event storage.Event `json:"event"`
-}
-
 func writeServerError(w http.ResponseWriter) {
 	status := http.StatusInternalServerError
 	http.Error(w, http.StatusText(status), status)
@@ -57,6 +37,8 @@ func eventsHandler(app server.Application) func(http.ResponseWriter, *http.Reque
 			createEventHandler(app, w, r)
 		case "PATCH":
 			updateEventHandler(app, w, r)
+		case "DELETE":
+			deleteEventHandler(app, w, r)
 		default:
 			w.WriteHeader(http.StatusMethodNotAllowed)
 		}
@@ -123,4 +105,34 @@ func updateEventHandler(app server.Application, w http.ResponseWriter, r *http.R
 		writeServerError(w)
 		return
 	}
+}
+
+func deleteEventHandler(app server.Application, w http.ResponseWriter, r *http.Request) {
+	idStr := r.URL.Query().Get("id")
+	if idStr == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		writeError(w, err, http.StatusBadRequest)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	err = app.DeleteEvent(ctx, id)
+	if err != nil {
+		status := http.StatusBadRequest
+
+		var errIDNotFound *storage.ErrIDNotFound
+		if errors.As(err, &errIDNotFound) {
+			status = http.StatusNotFound
+		}
+
+		writeError(w, err, status)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
