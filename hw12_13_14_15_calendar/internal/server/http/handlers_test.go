@@ -215,6 +215,47 @@ func Test_UpdateEvent(t *testing.T) {
 		require.Equal(t, 1, len(inStore))
 		require.Equal(t, got, inStore[0])
 	})
+
+	t.Run("event ID not found", func(t *testing.T) {
+		te := setUpTestEnv()
+
+		ctx := context.Background()
+		event := generateEvent(
+			uuid.New(),
+			"test created",
+			time.Date(2022, time.Month(3), 1, 0, 0, 0, 0, time.UTC),
+			time.Hour*2,
+			"test description",
+			uuid.New(),
+		)
+		event, err := te.storage.SaveEvent(ctx, event)
+		require.NoError(t, err)
+
+		event.ID = uuid.New()
+		event.Title = "updated title"
+		event.Description = "updated description"
+		event.Duration = time.Second * 30
+
+		reqBody := &bytes.Buffer{}
+		err = json.NewEncoder(reqBody).Encode(UpdateEventRequest{Event: event})
+		require.NoError(t, err)
+
+		req, err := http.NewRequest("PATCH", "/events", reqBody)
+		require.NoError(t, err)
+
+		rr := httptest.NewRecorder()
+		te.mux.ServeHTTP(rr, req)
+		require.Equal(t, http.StatusNotFound, rr.Code)
+
+		expectedErr := storage.NewErrIDNotFound(event.ID)
+
+		response := ErrorResponse{}
+		err = json.NewDecoder(rr.Body).Decode(&response)
+		require.NoError(t, err)
+
+		got := response.Detail
+		require.Equal(t, expectedErr.Error(), got)
+	})
 }
 
 func Test_Events_MethodNotAllowed(t *testing.T) {

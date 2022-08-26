@@ -3,6 +3,7 @@ package internalhttp
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/server"
@@ -104,7 +105,14 @@ func updateEventHandler(app server.Application, w http.ResponseWriter, r *http.R
 
 	updated, err := app.UpdateEvent(ctx, request.Event)
 	if err != nil {
-		writeError(w, err, http.StatusBadRequest)
+		status := http.StatusBadRequest
+
+		var errIDNotFound *storage.ErrIDNotFound
+		if errors.As(err, &errIDNotFound) {
+			status = http.StatusNotFound
+		}
+
+		writeError(w, err, status)
 		return
 	}
 
