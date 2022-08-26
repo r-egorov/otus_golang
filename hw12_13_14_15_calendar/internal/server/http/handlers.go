@@ -53,9 +53,9 @@ func eventsHandler(app server.Application) func(http.ResponseWriter, *http.Reque
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case "POST":
-			createEventsHandler(app, w, r)
+			createEventHandler(app, w, r)
 		case "PATCH":
-			updateEventsHandler(app, w, r)
+			updateEventHandler(app, w, r)
 		default:
 			w.WriteHeader(http.StatusMethodNotAllowed)
 		}
@@ -63,7 +63,7 @@ func eventsHandler(app server.Application) func(http.ResponseWriter, *http.Reque
 	return handler
 }
 
-func createEventsHandler(app server.Application, w http.ResponseWriter, r *http.Request) {
+func createEventHandler(app server.Application, w http.ResponseWriter, r *http.Request) {
 	var request CreateEventRequest
 	err := json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
@@ -91,7 +91,7 @@ func createEventsHandler(app server.Application, w http.ResponseWriter, r *http.
 	}
 }
 
-func updateEventsHandler(app server.Application, w http.ResponseWriter, r *http.Request) {
+func updateEventHandler(app server.Application, w http.ResponseWriter, r *http.Request) {
 	var request UpdateEventRequest
 	err := json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
@@ -102,8 +102,7 @@ func updateEventsHandler(app server.Application, w http.ResponseWriter, r *http.
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
-	event := request.Event
-	updated, err := app.UpdateEvent(ctx, event)
+	updated, err := app.UpdateEvent(ctx, request.Event)
 	if err != nil {
 		writeError(w, err, http.StatusBadRequest)
 		return

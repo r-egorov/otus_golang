@@ -19,8 +19,8 @@ type mockApp struct {
 	storage app.Storage
 }
 
-func newMockApp(s app.Storage) mockApp {
-	return mockApp{s}
+func newMockApp(s app.Storage) *mockApp {
+	return &mockApp{s}
 }
 
 func (m *mockApp) SaveEvent(ctx context.Context, event storage.Event) (storage.Event, error) {
@@ -83,12 +83,28 @@ func (m *mockApp) ListEventsMonth(ctx context.Context, monthStart time.Time) ([]
 	return events, nil
 }
 
+type testEnv struct {
+	app     *mockApp
+	storage *memorystorage.Storage
+	mux     *http.ServeMux
+}
+
+func setUpTestEnv() testEnv {
+	s := memorystorage.New()
+	a := newMockApp(s)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/events", eventsHandler(a))
+
+	return testEnv{
+		app:     a,
+		storage: s,
+		mux:     mux,
+	}
+}
+
 func Test_CreateEvent(t *testing.T) {
 	t.Run("creates event", func(t *testing.T) {
-		s := memorystorage.New()
-		a := newMockApp(s)
-		mux := http.NewServeMux()
-		mux.HandleFunc("/events", eventsHandler(&a))
+		te := setUpTestEnv()
 
 		datetime := time.Date(2022, time.Month(3), 1, 0, 0, 0, 0, time.UTC)
 		expected := generateEvent(
@@ -108,7 +124,7 @@ func Test_CreateEvent(t *testing.T) {
 		require.NoError(t, err)
 
 		rr := httptest.NewRecorder()
-		mux.ServeHTTP(rr, req)
+		te.mux.ServeHTTP(rr, req)
 		require.Equal(t, http.StatusCreated, rr.Code)
 
 		response := CreateEventResponse{}
@@ -119,17 +135,14 @@ func Test_CreateEvent(t *testing.T) {
 		expected.ID = got.ID
 		require.Equal(t, expected, got)
 
-		saved, err := s.ListEventsDay(context.Background(), datetime)
+		saved, err := te.storage.ListEventsDay(context.Background(), datetime)
 		require.NoError(t, err)
 		require.Equal(t, 1, len(saved))
 		require.Equal(t, expected, saved[0])
 	})
 
 	t.Run("it generates ID on the backend", func(t *testing.T) {
-		s := memorystorage.New()
-		a := newMockApp(s)
-		mux := http.NewServeMux()
-		mux.HandleFunc("/events", eventsHandler(&a))
+		te := setUpTestEnv()
 
 		reqBody := &bytes.Buffer{}
 		reqBody.WriteString(`{
@@ -145,7 +158,7 @@ func Test_CreateEvent(t *testing.T) {
 		require.NoError(t, err)
 
 		rr := httptest.NewRecorder()
-		mux.ServeHTTP(rr, req)
+		te.mux.ServeHTTP(rr, req)
 		require.Equal(t, http.StatusCreated, rr.Code)
 
 		response := CreateEventResponse{}
@@ -159,10 +172,8 @@ func Test_CreateEvent(t *testing.T) {
 
 func Test_UpdateEvent(t *testing.T) {
 	t.Run("updates event", func(t *testing.T) {
-		s := memorystorage.New()
-		a := newMockApp(s)
-		mux := http.NewServeMux()
-		mux.HandleFunc("/events", eventsHandler(&a))
+		te := setUpTestEnv()
+
 		ctx := context.Background()
 
 		datetime := time.Date(2022, time.Month(3), 1, 0, 0, 0, 0, time.UTC)
@@ -174,7 +185,7 @@ func Test_UpdateEvent(t *testing.T) {
 			"test description",
 			uuid.New(),
 		)
-		event, err := s.SaveEvent(ctx, event)
+		event, err := te.storage.SaveEvent(ctx, event)
 		require.NoError(t, err)
 
 		event.Title = "updated title"
@@ -189,7 +200,7 @@ func Test_UpdateEvent(t *testing.T) {
 		require.NoError(t, err)
 
 		rr := httptest.NewRecorder()
-		mux.ServeHTTP(rr, req)
+		te.mux.ServeHTTP(rr, req)
 		require.Equal(t, http.StatusOK, rr.Code)
 
 		response := UpdateEventResponse{}
@@ -199,7 +210,7 @@ func Test_UpdateEvent(t *testing.T) {
 		got := response.Event
 		require.Equal(t, event, got)
 
-		inStore, err := s.ListEventsDay(context.Background(), datetime)
+		inStore, err := te.storage.ListEventsDay(context.Background(), datetime)
 		require.NoError(t, err)
 		require.Equal(t, 1, len(inStore))
 		require.Equal(t, got, inStore[0])
@@ -208,16 +219,13 @@ func Test_UpdateEvent(t *testing.T) {
 
 func Test_Events_MethodNotAllowed(t *testing.T) {
 	t.Run("method not allowed", func(t *testing.T) {
-		s := memorystorage.New()
-		a := newMockApp(s)
-		mux := http.NewServeMux()
-		mux.HandleFunc("/events", eventsHandler(&a))
+		te := setUpTestEnv()
 
 		req, err := http.NewRequest("GET", "/events", nil)
 		require.NoError(t, err)
 
 		rr := httptest.NewRecorder()
-		mux.ServeHTTP(rr, req)
+		te.mux.ServeHTTP(rr, req)
 
 		require.Equal(t, http.StatusMethodNotAllowed, rr.Code)
 	})
