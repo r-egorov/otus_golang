@@ -83,30 +83,99 @@ func (m *mockApp) ListEventsMonth(ctx context.Context, monthStart time.Time) ([]
 	return events, nil
 }
 
-func Test_Hello(t *testing.T) {
-	rr := httptest.NewRecorder()
-	mux := http.NewServeMux()
-	mux.HandleFunc("/hello", hello)
-	req, err := http.NewRequest("GET", "/hello", nil)
-	require.NoError(t, err)
-	mux.ServeHTTP(rr, req)
+func Test_CreateEvent(t *testing.T) {
+	t.Run("creates event", func(t *testing.T) {
+		s := memorystorage.New()
+		a := newMockApp(s)
+		mux := http.NewServeMux()
+		mux.HandleFunc("/events", createEventsHandler(&a))
 
-	require.Equal(t, "Hello world!", rr.Body.String())
-	require.Equal(t, http.StatusOK, rr.Code)
+		datetime := time.Date(2022, time.Month(3), 1, 0, 0, 0, 0, time.UTC)
+		expected := generateEvent(
+			uuid.New(),
+			"test created",
+			datetime,
+			time.Hour*2,
+			"test description",
+			uuid.New(),
+		)
+
+		reqBody := &bytes.Buffer{}
+		err := json.NewEncoder(reqBody).Encode(expected)
+		require.NoError(t, err)
+
+		req, err := http.NewRequest("POST", "/events", reqBody)
+		require.NoError(t, err)
+
+		rr := httptest.NewRecorder()
+		mux.ServeHTTP(rr, req)
+		require.Equal(t, http.StatusCreated, rr.Code)
+
+		got := storage.Event{}
+		err = json.NewDecoder(rr.Body).Decode(&got)
+		require.NoError(t, err)
+
+		expected.ID = got.ID
+		require.Equal(t, expected, got)
+
+		saved, err := s.ListEventsDay(context.Background(), datetime)
+		require.NoError(t, err)
+		require.Equal(t, 1, len(saved))
+		require.Equal(t, expected, saved[0])
+	})
+
+	t.Run("it generates ID on the backend", func(t *testing.T) {
+		s := memorystorage.New()
+		a := newMockApp(s)
+		mux := http.NewServeMux()
+		mux.HandleFunc("/events", createEventsHandler(&a))
+
+		reqBody := &bytes.Buffer{}
+		reqBody.WriteString(`{
+"title":"test created",
+"datetime":"2022-03-01T00:00:00Z","duration":7200000000000,
+"description":"test description",
+"owner_id":"61b662df-7661-496f-8ada-8a04d1bfe78a"
+}`)
+
+		req, err := http.NewRequest("POST", "/events", reqBody)
+		require.NoError(t, err)
+
+		rr := httptest.NewRecorder()
+		mux.ServeHTTP(rr, req)
+		require.Equal(t, http.StatusCreated, rr.Code)
+
+		got := storage.Event{}
+		err = json.NewDecoder(rr.Body).Decode(&got)
+		require.NoError(t, err)
+		require.NotEqual(t, uuid.Nil, got.ID)
+	})
+
+	t.Run("method not allowed", func(t *testing.T) {
+		s := memorystorage.New()
+		a := newMockApp(s)
+		mux := http.NewServeMux()
+		mux.HandleFunc("/events", createEventsHandler(&a))
+
+		req, err := http.NewRequest("GET", "/events", nil)
+		require.NoError(t, err)
+
+		rr := httptest.NewRecorder()
+		mux.ServeHTTP(rr, req)
+
+		require.Equal(t, http.StatusMethodNotAllowed, rr.Code)
+	})
 }
 
-func Test_CreateEvent(t *testing.T) {
-	s := memorystorage.New()
-	a := newMockApp(s)
-
-	id := uuid.New()
-	title := "test created"
-	datetime := time.Date(2022, time.Month(3), 1, 0, 0, 0, 0, time.UTC)
-	duration := time.Hour * 2
-	descritpion := "test description"
-	ownerID := uuid.New()
-
-	expected := storage.Event{
+func generateEvent(
+	id uuid.UUID,
+	title string,
+	datetime time.Time,
+	duration time.Duration,
+	descritpion string,
+	ownerID uuid.UUID,
+) storage.Event {
+	return storage.Event{
 		ID:          id,
 		Title:       title,
 		DateTime:    datetime,
@@ -114,27 +183,4 @@ func Test_CreateEvent(t *testing.T) {
 		Description: descritpion,
 		OwnerID:     ownerID,
 	}
-
-	reqBody := &bytes.Buffer{}
-	err := json.NewEncoder(reqBody).Encode(expected)
-	require.NoError(t, err)
-
-	rr := httptest.NewRecorder()
-	mux := http.NewServeMux()
-	mux.HandleFunc("/events", createEventsHandler(&a, "POST"))
-	req, err := http.NewRequest("POST", "/events", reqBody)
-	require.NoError(t, err)
-
-	mux.ServeHTTP(rr, req)
-	require.Equal(t, http.StatusCreated, rr.Code)
-
-	got := storage.Event{}
-	err = json.NewDecoder(rr.Body).Decode(&got)
-	require.NoError(t, err)
-	require.Equal(t, expected, got)
-
-	saved, err := s.ListEventsDay(context.Background(), datetime)
-	require.NoError(t, err)
-	require.Equal(t, 1, len(saved))
-	require.Equal(t, expected, saved[0])
 }

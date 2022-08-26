@@ -13,8 +13,7 @@ type MyRouter struct {
 func newRouter(app server.Application) MyRouter {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/hello", hello)
-	mux.HandleFunc("/events", createEventsHandler(app, "POST"))
+	mux.HandleFunc("/events", createEventsHandler(app))
 
 	router := MyRouter{
 		mux: mux,

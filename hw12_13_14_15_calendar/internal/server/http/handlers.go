@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/google/uuid"
 	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/server"
 	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/storage"
 	"net/http"
@@ -14,61 +15,62 @@ type ErrorResponse struct {
 	Detail string `json:"detail"`
 }
 
-func hello(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Hello world!"))
+type CreateEventRequest struct {
+	Event storage.Event `json:"event"`
 }
 
-func createEventsHandler(app server.Application, method string) func(http.ResponseWriter, *http.Request) {
+type CreateEventResponse struct {
+	Event storage.Event `json:"event"`
+}
+
+func writeServerError(w http.ResponseWriter) {
+	status := http.StatusInternalServerError
+	http.Error(w, http.StatusText(status), status)
+}
+
+func writeError(w http.ResponseWriter, err error, status int) {
+	payload := ErrorResponse{err.Error()}
+
+	body, err := json.Marshal(payload)
+	if err != nil {
+		writeServerError(w)
+		return
+	}
+
+	w.WriteHeader(status)
+	_, _ = fmt.Fprint(w, string(body))
+}
+
+func createEventsHandler(app server.Application) func(http.ResponseWriter, *http.Request) {
 	postHandler := func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+
 		var event storage.Event
 		err := json.NewDecoder(r.Body).Decode(&event)
 		if err != nil {
-			payload := ErrorResponse{err.Error()}
-
-			body, err := json.Marshal(payload)
-			if err != nil {
-				status := http.StatusInternalServerError
-				http.Error(w, http.StatusText(status), status)
-				return
-			}
-
-			w.WriteHeader(http.StatusBadRequest)
-			_, _ = fmt.Fprint(w, string(body))
+			writeError(w, err, http.StatusBadRequest)
 			return
 		}
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 		defer cancel()
 
+		event.ID = uuid.New()
 		saved, err := app.SaveEvent(ctx, event)
 		if err != nil {
-			payload := ErrorResponse{err.Error()}
-
-			body, err := json.Marshal(payload)
-			if err != nil {
-				status := http.StatusInternalServerError
-				http.Error(w, http.StatusText(status), status)
-				return
-			}
-
-			w.WriteHeader(http.StatusBadRequest)
-			_, _ = fmt.Fprint(w, string(body))
+			writeError(w, err, http.StatusBadRequest)
 			return
 		}
 
 		w.WriteHeader(http.StatusCreated)
 		err = json.NewEncoder(w).Encode(saved)
 		if err != nil {
-			status := http.StatusInternalServerError
-			http.Error(w, http.StatusText(status), status)
+			writeServerError(w)
 			return
 		}
 	}
-
-	switch method {
-	case "POST":
-		return postHandler
-	}
-
-	return hello
+	return postHandler
 }
