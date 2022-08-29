@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/google/uuid"
 	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/server"
 	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/storage"
-	"net/http"
-	"time"
 )
 
 func writeServerError(w http.ResponseWriter) {

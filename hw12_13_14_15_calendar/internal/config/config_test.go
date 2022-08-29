@@ -30,7 +30,7 @@ func TestConfig(t *testing.T) {
 					Port:        "6543",
 					DBName:      "db",
 				},
-				HttpServer: ServerConf{
+				HTTPServer: ServerConf{
 					Host: "0.0.0.0",
 					Port: "1234",
 				},
@@ -50,7 +50,7 @@ func TestConfig(t *testing.T) {
 				Storage: StorageConf{
 					StorageType: "inmemory",
 				},
-				HttpServer: ServerConf{
+				HTTPServer: ServerConf{
 					Host: "0.0.0.0",
 					Port: "1234",
 				},
@@ -83,7 +83,7 @@ func TestConfig(t *testing.T) {
 			Storage: StorageConf{
 				StorageType: "inmemory",
 			},
-			HttpServer: ServerConf{
+			HTTPServer: ServerConf{
 				Host: "localhost",
 				Port: "8000",
 			},
@@ -223,8 +223,8 @@ port = "%s"
 		c.Storage.DBName,
 		c.Storage.Host,
 		c.Storage.Port,
-		c.HttpServer.Host,
-		c.HttpServer.Port,
+		c.HTTPServer.Host,
+		c.HTTPServer.Port,
 		c.GrpcServer.Host,
 		c.GrpcServer.Port,
 	)

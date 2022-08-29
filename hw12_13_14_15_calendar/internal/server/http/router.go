@@ -1,8 +1,9 @@
 package internalhttp
 
 import (
-	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/server"
 	"net/http"
+
+	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/server"
 )
 
 type MyRouter struct {

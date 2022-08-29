@@ -9,7 +9,7 @@ import (
 type Config struct {
 	Logger     LoggerConf
 	Storage    StorageConf
-	HttpServer ServerConf
+	HTTPServer ServerConf
 	GrpcServer ServerConf
 }
 
@@ -66,7 +66,7 @@ func NewConfig(configFilePath string) (Config, error) {
 	return Config{
 		Logger:     logger,
 		Storage:    storage,
-		HttpServer: httpServer,
+		HTTPServer: httpServer,
 		GrpcServer: grpcServer,
 	}, nil
 }

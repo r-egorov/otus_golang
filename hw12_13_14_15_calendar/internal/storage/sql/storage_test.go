@@ -6,9 +6,10 @@ package sqlstorage
 import (
 	"context"
 	"database/sql"
-	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/google/uuid"
 	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/storage"
@@ -151,7 +152,6 @@ func TestStorage_DeleteEvent(t *testing.T) {
 		var errIDNotFound *storage.ErrIDNotFound
 		require.ErrorAs(t, err, &errIDNotFound)
 	})
-
 }
 
 func TestStorage_ListEventsDay(t *testing.T) {

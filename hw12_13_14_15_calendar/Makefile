@@ -45,8 +45,9 @@ clean:
 	rm -f $(BINDIR)
 
 generate:
+	apt install -y protobuf-compiler
 	protoc --go_out=./internal/server/ --go-grpc_out=./internal/server/ ./internal/server/grpc/proto/EventService.proto
 
 re: clean build
 
-.PHONY: build run build-img run-img version test lint clean re
+.PHONY: build run build-img run-img version test lint clean generate re

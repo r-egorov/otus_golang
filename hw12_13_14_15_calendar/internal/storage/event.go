@@ -13,7 +13,7 @@ type Event struct {
 	DateTime    time.Time     `json:"datetime"`
 	Duration    time.Duration `json:"duration"`
 	Description string        `json:"description"`
-	OwnerID     uuid.UUID     `json:"owner_id"`
+	OwnerID     uuid.UUID     `json:"ownerId"`
 	// NotifyBefore time.Duration
 }
 

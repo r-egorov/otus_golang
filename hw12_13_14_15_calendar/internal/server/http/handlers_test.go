@@ -4,16 +4,17 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/google/uuid"
-	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/app"
-	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/storage"
-	memorystorage "github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/storage/memory"
-	"github.com/stretchr/testify/require"
 	"net/http"
 	"net/http/httptest"
 	"sort"
 	"testing"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/app"
+	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/storage"
+	memorystorage "github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/storage/memory"
+	"github.com/stretchr/testify/require"
 )
 
 type mockApp struct {
@@ -113,7 +114,7 @@ func Test_CreateEvent(t *testing.T) {
 		err := json.NewEncoder(reqBody).Encode(CreateEventRequest{Event: expected})
 		require.NoError(t, err)
 
-		req, err := http.NewRequest("POST", "/events", reqBody)
+		req, err := http.NewRequestWithContext(context.Background(), "POST", "/events", reqBody)
 		require.NoError(t, err)
 
 		rr := httptest.NewRecorder()
@@ -153,7 +154,7 @@ func Test_UpdateEvent(t *testing.T) {
 		err = json.NewEncoder(reqBody).Encode(UpdateEventRequest{Event: toUpdate})
 		require.NoError(t, err)
 
-		req, err := http.NewRequest("PATCH", "/events", reqBody)
+		req, err := http.NewRequestWithContext(context.Background(), "PATCH", "/events", reqBody)
 		require.NoError(t, err)
 
 		rr := httptest.NewRecorder()
@@ -190,7 +191,7 @@ func Test_UpdateEvent(t *testing.T) {
 		err = json.NewEncoder(reqBody).Encode(UpdateEventRequest{Event: event})
 		require.NoError(t, err)
 
-		req, err := http.NewRequest("PATCH", "/events", reqBody)
+		req, err := http.NewRequestWithContext(context.Background(), "PATCH", "/events", reqBody)
 		require.NoError(t, err)
 
 		rr := httptest.NewRecorder()
@@ -217,7 +218,7 @@ func Test_DeleteEvent(t *testing.T) {
 		expected, err := te.storage.SaveEvent(ctx, expected)
 		require.NoError(t, err)
 
-		req, err := http.NewRequest("DELETE", "/events", nil)
+		req, err := http.NewRequestWithContext(context.Background(), "DELETE", "/events", nil)
 		require.NoError(t, err)
 
 		q := req.URL.Query()
@@ -241,7 +242,7 @@ func Test_DeleteEvent(t *testing.T) {
 		expected, err := te.storage.SaveEvent(ctx, expected)
 		require.NoError(t, err)
 
-		req, err := http.NewRequest("DELETE", "/events", nil)
+		req, err := http.NewRequestWithContext(context.Background(), "DELETE", "/events", nil)
 		require.NoError(t, err)
 
 		q := req.URL.Query()
@@ -262,7 +263,7 @@ func Test_Events_MethodNotAllowed(t *testing.T) {
 	t.Run("method not allowed", func(t *testing.T) {
 		te := setUpTestEnv()
 
-		req, err := http.NewRequest("PUT", "/events", nil)
+		req, err := http.NewRequestWithContext(context.Background(), "PUT", "/events", nil)
 		require.NoError(t, err)
 
 		rr := httptest.NewRecorder()
@@ -286,7 +287,7 @@ func Test_GetEvents(t *testing.T) {
 		}
 		datetime := expected[0].DateTime
 
-		req, err := http.NewRequest("GET", "/events", nil)
+		req, err := http.NewRequestWithContext(context.Background(), "GET", "/events", nil)
 		require.NoError(t, err)
 
 		q := req.URL.Query()
@@ -313,7 +314,7 @@ func Test_GetEvents(t *testing.T) {
 		te := setUpTestEnv()
 
 		datetime := time.Date(2022, time.Month(3), 1, 0, 0, 0, 0, time.UTC)
-		req, err := http.NewRequest("GET", "/events", nil)
+		req, err := http.NewRequestWithContext(context.Background(), "GET", "/events", nil)
 		require.NoError(t, err)
 
 		q := req.URL.Query()
@@ -324,7 +325,7 @@ func Test_GetEvents(t *testing.T) {
 		te.mux.ServeHTTP(rr, req)
 		require.Equal(t, http.StatusBadRequest, rr.Code)
 
-		req, err = http.NewRequest("GET", "/events", nil)
+		req, err = http.NewRequestWithContext(context.Background(), "GET", "/events", nil)
 		require.NoError(t, err)
 
 		q = req.URL.Query()
@@ -341,7 +342,7 @@ func Test_GetEvents(t *testing.T) {
 
 		expected := []storage.Event{}
 		datetime := time.Date(2022, time.Month(3), 1, 0, 0, 0, 0, time.UTC)
-		req, err := http.NewRequest("GET", "/events", nil)
+		req, err := http.NewRequestWithContext(context.Background(), "GET", "/events", nil)
 		require.NoError(t, err)
 
 		q := req.URL.Query()

@@ -4,16 +4,17 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/app"
-	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/config"
-	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/logger"
-	internalgrpc "github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/server/grpc"
-	internalhttp "github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/server/http"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/app"
+	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/config"
+	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/logger"
+	internalgrpc "github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/server/grpc"
+	internalhttp "github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/server/http"
 )
 
 var configFilePath string
@@ -32,7 +33,7 @@ func main() {
 
 	conf, err := config.NewConfig(configFilePath)
 	if err != nil {
-		log.Fatalf("config: %s", err.Error()) //nolint:gocritic
+		log.Fatalf("config: %s", err.Error())
 	}
 
 	// Configure logger
@@ -62,7 +63,7 @@ func main() {
 	}()
 
 	// Configure API servers
-	httpserver := internalhttp.NewServer(logg, calendar, conf.HttpServer.Host, conf.HttpServer.Port)
+	httpserver := internalhttp.NewServer(logg, calendar, conf.HTTPServer.Host, conf.HTTPServer.Port)
 	grpcserver := internalgrpc.NewService(logg, calendar, conf.GrpcServer.Host, conf.GrpcServer.Port)
 
 	// Start API servers

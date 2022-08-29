@@ -3,13 +3,13 @@ package app
 import (
 	"context"
 	"fmt"
-	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/config"
-	memorystorage "github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/storage/memory"
-	sqlstorage "github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/storage/sql"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/config"
 	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/storage"
+	memorystorage "github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/storage/memory"
+	sqlstorage "github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/storage/sql"
 )
 
 type Logger interface {
@@ -36,7 +36,7 @@ type App struct {
 	conf    config.Config
 }
 
-func New(Logg Logger, conf config.Config) *App {
+func New(logg Logger, conf config.Config) *App {
 	var store Storage
 	switch conf.Storage.StorageType {
 	case config.PSQLStorageType:
@@ -52,7 +52,7 @@ func New(Logg Logger, conf config.Config) *App {
 	}
 
 	return &App{
-		Logg:    Logg,
+		Logg:    logg,
 		storage: store,
 		conf:    conf,
 	}

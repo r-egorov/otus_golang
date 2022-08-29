@@ -2,9 +2,10 @@ package server
 
 import (
 	"context"
+	"time"
+
 	"github.com/google/uuid"
 	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/storage"
-	"time"
 )
 
 type Application interface {

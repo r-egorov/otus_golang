@@ -3,10 +3,11 @@ package grpc
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/server"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/peer"
-	"time"
 )
 
 func logInterceptor(

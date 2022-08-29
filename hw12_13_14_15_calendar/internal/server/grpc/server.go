@@ -3,13 +3,14 @@ package grpc
 import (
 	"context"
 	"fmt"
+	"net"
+
 	"github.com/google/uuid"
 	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/server"
 	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/storage"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
-	"net"
 )
 
 type Service struct {
@@ -163,6 +164,7 @@ func mapEventNativeToProto(event *storage.Event) *Event {
 func mapEventsNativeToProto(events []storage.Event) []*Event {
 	eventsProto := make([]*Event, len(events))
 	for i, event := range events {
+		event := event
 		eventsProto[i] = mapEventNativeToProto(&event)
 	}
 	return eventsProto
