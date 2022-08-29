@@ -133,34 +133,6 @@ func Test_CreateEvent(t *testing.T) {
 		require.Equal(t, 1, len(saved))
 		require.Equal(t, expected, saved[0])
 	})
-
-	t.Run("it generates ID on the backend", func(t *testing.T) {
-		te := setUpTestEnv()
-
-		reqBody := &bytes.Buffer{}
-		reqBody.WriteString(`{
-"event": {
-		"title":"test created",
-		"datetime":"2022-03-01T00:00:00Z","duration":7200000000000,
-		"description":"test description",
-		"owner_id":"61b662df-7661-496f-8ada-8a04d1bfe78a"
-	}
-}`)
-
-		req, err := http.NewRequest("POST", "/events", reqBody)
-		require.NoError(t, err)
-
-		rr := httptest.NewRecorder()
-		te.mux.ServeHTTP(rr, req)
-		require.Equal(t, http.StatusCreated, rr.Code)
-
-		response := CreateEventResponse{}
-		err = json.NewDecoder(rr.Body).Decode(&response)
-		require.NoError(t, err)
-
-		got := response.Event
-		require.NotEqual(t, uuid.Nil, got.ID)
-	})
 }
 
 func Test_UpdateEvent(t *testing.T) {

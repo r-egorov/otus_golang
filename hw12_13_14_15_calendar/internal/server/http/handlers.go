@@ -59,9 +59,7 @@ func createEventHandler(app server.Application, w http.ResponseWriter, r *http.R
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
-	event := request.Event
-	event.ID = uuid.New()
-	saved, err := app.SaveEvent(ctx, event)
+	saved, err := app.SaveEvent(ctx, request.Event)
 	if err != nil {
 		writeError(w, err, http.StatusBadRequest)
 		return
