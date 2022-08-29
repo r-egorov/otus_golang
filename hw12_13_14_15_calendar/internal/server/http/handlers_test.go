@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"net/http"
 	"net/http/httptest"
+	"sort"
 	"testing"
 	"time"
 )
@@ -289,13 +290,105 @@ func Test_Events_MethodNotAllowed(t *testing.T) {
 	t.Run("method not allowed", func(t *testing.T) {
 		te := setUpTestEnv()
 
-		req, err := http.NewRequest("GET", "/events", nil)
+		req, err := http.NewRequest("PUT", "/events", nil)
 		require.NoError(t, err)
 
 		rr := httptest.NewRecorder()
 		te.mux.ServeHTTP(rr, req)
 
 		require.Equal(t, http.StatusMethodNotAllowed, rr.Code)
+	})
+}
+
+func Test_GetEvents(t *testing.T) {
+	t.Run("gets list of events", func(t *testing.T) {
+		te := setUpTestEnv()
+		ctx := context.Background()
+
+		expected := make([]storage.Event, 0, 3)
+		for i := 0; i < 3; i++ {
+			event := generateEvent()
+			event, err := te.storage.SaveEvent(ctx, event)
+			require.NoError(t, err)
+			expected = append(expected, event)
+		}
+		datetime := expected[0].DateTime
+
+		req, err := http.NewRequest("GET", "/events", nil)
+		require.NoError(t, err)
+
+		q := req.URL.Query()
+		q.Add("period", "day")
+		q.Add("datetime", datetime.Format(time.RFC3339Nano))
+		req.URL.RawQuery = q.Encode()
+
+		rr := httptest.NewRecorder()
+		te.mux.ServeHTTP(rr, req)
+		require.Equal(t, http.StatusOK, rr.Code)
+
+		response := GetEventsResponse{}
+		err = json.NewDecoder(rr.Body).Decode(&response)
+		require.NoError(t, err)
+
+		got := response.Events
+
+		sortEventsByID(got)
+		sortEventsByID(expected)
+		require.Equal(t, expected, got)
+	})
+
+	t.Run("not enough parameters", func(t *testing.T) {
+		te := setUpTestEnv()
+
+		datetime := time.Date(2022, time.Month(3), 1, 0, 0, 0, 0, time.UTC)
+		req, err := http.NewRequest("GET", "/events", nil)
+		require.NoError(t, err)
+
+		q := req.URL.Query()
+		q.Add("datetime", datetime.Format(time.RFC3339Nano))
+		req.URL.RawQuery = q.Encode()
+
+		rr := httptest.NewRecorder()
+		te.mux.ServeHTTP(rr, req)
+		require.Equal(t, http.StatusBadRequest, rr.Code)
+
+		req, err = http.NewRequest("GET", "/events", nil)
+		require.NoError(t, err)
+
+		q = req.URL.Query()
+		q.Add("period", "month")
+		req.URL.RawQuery = q.Encode()
+
+		rr = httptest.NewRecorder()
+		te.mux.ServeHTTP(rr, req)
+		require.Equal(t, http.StatusBadRequest, rr.Code)
+	})
+
+	t.Run("returns empty list", func(t *testing.T) {
+		te := setUpTestEnv()
+
+		expected := []storage.Event{}
+		datetime := time.Date(2022, time.Month(3), 1, 0, 0, 0, 0, time.UTC)
+		req, err := http.NewRequest("GET", "/events", nil)
+		require.NoError(t, err)
+
+		q := req.URL.Query()
+		q.Add("period", "day")
+		q.Add("datetime", datetime.Format(time.RFC3339Nano))
+		req.URL.RawQuery = q.Encode()
+
+		rr := httptest.NewRecorder()
+		te.mux.ServeHTTP(rr, req)
+		require.Equal(t, http.StatusOK, rr.Code)
+
+		response := GetEventsResponse{}
+		err = json.NewDecoder(rr.Body).Decode(&response)
+		require.NoError(t, err)
+
+		got := response.Events
+
+		require.Equal(t, len(expected), len(got))
+		require.Equal(t, expected, got)
 	})
 }
 
@@ -308,4 +401,10 @@ func generateEvent() storage.Event {
 		Description: "test description",
 		OwnerID:     uuid.New(),
 	}
+}
+
+func sortEventsByID(events []storage.Event) {
+	sort.Slice(events, func(i, j int) bool {
+		return events[i].ID.String() < events[j].ID.String()
+	})
 }

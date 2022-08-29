@@ -21,3 +21,7 @@ type UpdateEventRequest struct {
 type UpdateEventResponse struct {
 	Event storage.Event `json:"event"`
 }
+
+type GetEventsResponse struct {
+	Events []storage.Event `json:"events"`
+}
