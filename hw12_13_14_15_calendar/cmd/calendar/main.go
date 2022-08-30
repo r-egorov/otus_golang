@@ -64,7 +64,7 @@ func main() {
 
 	// Configure API servers
 	httpserver := internalhttp.NewServer(logg, calendar, conf.HTTPServer.Host, conf.HTTPServer.Port)
-	grpcserver := internalgrpc.NewService(logg, calendar, conf.GrpcServer.Host, conf.GrpcServer.Port)
+	grpcserver := internalgrpc.NewService(logg, calendar, conf.GRPCServer.Host, conf.GRPCServer.Port)
 
 	// Start API servers
 	httpserver.Start(ctx)
