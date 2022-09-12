@@ -2,30 +2,61 @@ package internalhttp
 
 import (
 	"context"
+	"fmt"
+	"net/http"
 )
 
-type Server struct { // TODO
+type Server struct {
+	srv        *http.Server
+	app        Application
+	log        Logger
+	host, port string
 }
 
-type Logger interface { // TODO
+type Logger interface {
+	Info(msg string)
+	Warn(msg string)
+	Error(msg string)
+	Debug(msg string)
 }
 
 type Application interface { // TODO
 }
 
-func NewServer(logger Logger, app Application) *Server {
-	return &Server{}
+func NewServer(logger Logger, app Application, host, port string) *Server {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/hello", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("Hello world!"))
+	})
+	srv := &http.Server{Addr: host + ":" + port, Handler: loggingMiddleware(mux, logger)}
+	return &Server{
+		srv:  srv,
+		app:  app,
+		log:  logger,
+		host: host,
+		port: port,
+	}
 }
 
 func (s *Server) Start(ctx context.Context) error {
-	// TODO
-	<-ctx.Done()
+	errChan := make(chan error)
+
+	go func() {
+		if err := s.srv.ListenAndServe(); err != nil {
+			errChan <- err
+		}
+	}()
+
+	s.log.Info(fmt.Sprintf("serving at %s", s.srv.Addr))
+	select {
+	case err := <-errChan:
+		return err
+	case <-ctx.Done():
+	}
 	return nil
 }
 
 func (s *Server) Stop(ctx context.Context) error {
-	// TODO
-	return nil
+	s.log.Info("stopping server...")
+	return s.srv.Shutdown(ctx)
 }
-
-// TODO
