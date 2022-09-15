@@ -33,7 +33,7 @@ type AMQPConf struct {
 }
 
 type SchedulerConf struct {
-	RemindBefore time.Duration
+	NotifyBefore time.Duration
 }
 
 const configType = "toml"
@@ -73,7 +73,7 @@ func NewConfig(configFilePath string) (Config, error) {
 		"queue": DefaultAMQPQueue,
 	})
 	viper.SetDefault("scheduler", map[string]string{
-		"remind_before": DefaultRemindBefore,
+		"notify_before": DefaultRemindBefore,
 	})
 
 	viper.SetConfigType(configType)
@@ -167,11 +167,11 @@ func parseAMQPMap(amqpMap map[string]string) AMQPConf {
 }
 
 func parseSchedulerMap(schedulerMap map[string]string) (SchedulerConf, error) {
-	remindBefore, err := time.ParseDuration(schedulerMap["remind_before"])
+	remindBefore, err := time.ParseDuration(schedulerMap["notify_before"])
 	if err != nil {
 		return SchedulerConf{}, err
 	}
 	return SchedulerConf{
-		RemindBefore: remindBefore,
+		NotifyBefore: remindBefore,
 	}, nil
 }
