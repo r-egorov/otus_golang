@@ -93,11 +93,12 @@ func TestConfig(t *testing.T) {
 				Port: DefaultGRPCPort,
 			},
 			AMQP: AMQPConf{
-				Uri:   DefaultAMQPUri,
+				URI:   DefaultAMQPUri,
 				Queue: DefaultAMQPQueue,
 			},
 			Scheduler: SchedulerConf{
 				NotifyBefore: time.Hour * 1,
+				Period:       time.Minute * 10,
 			},
 		}
 		te := setUpTestEnv(t, ``)
@@ -229,6 +230,7 @@ queue = "%s"
 
 [scheduler]
 notify_before = "%s"
+period = "%s"
 `,
 		c.Logger.Level,
 		c.Logger.OutPath,
@@ -242,8 +244,9 @@ notify_before = "%s"
 		c.HTTPServer.Port,
 		c.GRPCServer.Host,
 		c.GRPCServer.Port,
-		c.AMQP.Uri,
+		c.AMQP.URI,
 		c.AMQP.Queue,
 		c.Scheduler.NotifyBefore,
+		c.Scheduler.Period,
 	)
 }

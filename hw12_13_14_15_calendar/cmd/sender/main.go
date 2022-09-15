@@ -5,16 +5,14 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/config"
+	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/logger"
+	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/storage"
+	amqp "github.com/rabbitmq/amqp091-go"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
-
-	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/config"
-	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/logger"
-	sqlstorage "github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/storage/sql"
-	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 var configFilePath string
@@ -79,72 +77,34 @@ func main() {
 		logg.Fatal("failed to declare queue")
 	}
 
-	store := sqlstorage.New(
-		conf.Storage.User,
-		conf.Storage.Password,
-		conf.Storage.DBName,
-		conf.Storage.Host,
-		conf.Storage.Port,
+	msgs, err := amqpCh.Consume(
+		queue.Name,
+		"",
+		true,
+		false,
+		false,
+		false,
+		nil,
 	)
-	err = store.Connect(ctx)
 	if err != nil {
-		logg.Fatal("failed to connect to DB")
+		logg.Fatal("failed to consume amqp")
 	}
-
-	logg.Info("started scheduler...")
-	notifyBefore := conf.Scheduler.NotifyBefore
-	go func() {
+	go func(ctx context.Context) {
 		for {
-			start := time.Now().UTC()
-
-			notifications, err := store.ListToNotify(
-				ctx,
-				start,
-				notifyBefore,
-				5*time.Minute,
-			)
-			fmt.Println(notifications)
-			if err != nil {
-				logg.Error(fmt.Sprintf("cant retrieve notifications from DB: %v", err))
-			}
-
-			for _, notification := range notifications {
-				jsoned, err := json.Marshal(notification)
-				if err != nil {
-					logg.Error(fmt.Sprintf("failed to marshal: %s", notification))
-				}
-
-				ctxTimeout, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-				defer cancel()
-
-				err = amqpCh.PublishWithContext(
-					ctxTimeout,
-					"",
-					queue.Name,
-					false,
-					false,
-					amqp.Publishing{
-						ContentType: "application/json",
-						Body:        jsoned,
-					},
-				)
-				if err != nil {
-					logg.Error(fmt.Sprintf("failed to publish: %s", notification))
-				} else {
-					logg.Info(fmt.Sprintf("published: %s", notification))
-				}
-			}
-
-			timer := time.NewTimer(conf.Scheduler.Period - time.Since(start))
 			select {
-			case <-timer.C:
-				continue
 			case <-ctx.Done():
 				return
+			case msg := <-msgs:
+				var notification storage.Notification
+				if err := json.Unmarshal(msg.Body, &notification); err != nil {
+					logg.Error(fmt.Sprintf("failed to unmarshal message: %v", err))
+				}
+				logg.Info(notification.String())
 			}
 		}
-	}()
+	}(ctx)
 
+	logg.Info("started sender...")
 	<-ctx.Done()
 }
 

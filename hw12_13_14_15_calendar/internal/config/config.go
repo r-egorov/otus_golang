@@ -29,11 +29,11 @@ type ServerConf struct {
 }
 
 type AMQPConf struct {
-	Uri, Queue string
+	URI, Queue string
 }
 
 type SchedulerConf struct {
-	NotifyBefore time.Duration
+	NotifyBefore, Period time.Duration
 }
 
 const configType = "toml"
@@ -50,6 +50,7 @@ const (
 	DefaultAMQPUri      = "amqp://guest:guest@localhost:5672"
 	DefaultAMQPQueue    = "calendar"
 	DefaultRemindBefore = "1h"
+	DefaultPeriod       = "10m"
 )
 
 func NewConfig(configFilePath string) (Config, error) {
@@ -74,6 +75,7 @@ func NewConfig(configFilePath string) (Config, error) {
 	})
 	viper.SetDefault("scheduler", map[string]string{
 		"notify_before": DefaultRemindBefore,
+		"period":        DefaultPeriod,
 	})
 
 	viper.SetConfigType(configType)
@@ -161,7 +163,7 @@ func parseServerMap(serverMap map[string]string) ServerConf {
 
 func parseAMQPMap(amqpMap map[string]string) AMQPConf {
 	return AMQPConf{
-		Uri:   amqpMap["uri"],
+		URI:   amqpMap["uri"],
 		Queue: amqpMap["queue"],
 	}
 }
@@ -171,7 +173,12 @@ func parseSchedulerMap(schedulerMap map[string]string) (SchedulerConf, error) {
 	if err != nil {
 		return SchedulerConf{}, err
 	}
+	period, err := time.ParseDuration(schedulerMap["period"])
+	if err != nil {
+		return SchedulerConf{}, err
+	}
 	return SchedulerConf{
 		NotifyBefore: remindBefore,
+		Period:       period,
 	}, nil
 }
