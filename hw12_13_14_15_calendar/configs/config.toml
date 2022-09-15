@@ -23,4 +23,4 @@ uri = "amqp://guest:guest@localhost:5672"
 queue = "calendar"
 
 [scheduler]
-remind_before = "1h"
+notify_before = "10m"
