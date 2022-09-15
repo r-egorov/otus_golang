@@ -14,7 +14,6 @@ type Event struct {
 	Duration    time.Duration `json:"duration"`
 	Description string        `json:"description"`
 	OwnerID     uuid.UUID     `json:"ownerId"`
-	// NotifyBefore time.Duration
 }
 
 func (e *Event) String() string {

@@ -346,6 +346,52 @@ func TestStorage_ListEventsMonth(t *testing.T) {
 	})
 }
 
+func TestStorage_ListEventsToNotify(t *testing.T) {
+	s := New("postgres", "postgres", "calendar_test", "localhost", "5432")
+	ctx := context.Background()
+	require.NoError(t, s.Connect(ctx))
+	defer func() {
+		require.NoError(t, s.Close(ctx))
+	}()
+
+	t.Run("it returns list of events in a month", func(t *testing.T) {
+		defer truncateTable(t, s.db)
+
+		datesMap := make(map[string]time.Time)
+		datesMap["now"] = time.Date(2022, time.Month(1), 10, 12, 30, 0, 0, time.UTC)
+		datesMap["inFiveMinutes"] = time.Date(2022, time.Month(1), 10, 12, 35, 0, 0, time.UTC)
+		datesMap["inTenMinutes"] = time.Date(2022, time.Month(1), 10, 12, 40, 0, 0, time.UTC)
+		datesMap["inFifteenMinutes"] = time.Date(2022, time.Month(1), 10, 12, 45, 0, 0, time.UTC)
+		datesMap["inHour"] = time.Date(2022, time.Month(1), 10, 13, 30, 0, 0, time.UTC)
+
+		events := []storage.Event{}
+		for k, v := range datesMap {
+			event := generateEvent()
+			event.Title = k
+			event.DateTime = v
+			savedEvent, err := s.SaveEvent(ctx, event)
+			require.NoError(t, err)
+			events = append(events, savedEvent)
+		}
+
+		notifications, err := s.ListToNotify(ctx, datesMap["now"], 10*time.Minute, 5*time.Minute)
+		require.NoError(t, err)
+		require.Equal(t, 3, len(notifications))
+
+		expected := make(map[string]struct{})
+		expected["inFiveMinutes"] = struct{}{}
+		expected["inTenMinutes"] = struct{}{}
+		expected["inFifteenMinutes"] = struct{}{}
+
+		got := make(map[string]struct{})
+		for _, n := range notifications {
+			got[n.EventTitle] = struct{}{}
+		}
+
+		require.Equal(t, expected, got)
+	})
+}
+
 func truncateTable(t *testing.T, db *sql.DB) {
 	t.Helper()
 	_, err := db.Exec(`TRUNCATE TABLE events`)
@@ -410,6 +456,23 @@ func assertEventListsEqual(t *testing.T, l, r []storage.Event) {
 		res := make(map[uuid.UUID]storage.Event)
 		for _, event := range sl {
 			res[event.ID] = event
+		}
+		return res
+	}
+
+	lmap := mapFromSlice(l)
+	rmap := mapFromSlice(r)
+
+	require.Equal(t, lmap, rmap)
+}
+
+func assertNotificationListsEqual(t *testing.T, l, r []storage.Notification) {
+	t.Helper()
+
+	mapFromSlice := func(sl []storage.Notification) map[uuid.UUID]storage.Notification {
+		res := make(map[uuid.UUID]storage.Notification)
+		for _, notification := range sl {
+			res[notification.EventID] = notification
 		}
 		return res
 	}
