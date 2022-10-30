@@ -18,7 +18,7 @@ type Server struct {
 
 func NewServer(logger server.Logger, app server.Application, host, port string) *Server {
 	mux := newRouter(app)
-	srv := &http.Server{Addr: host + ":" + port, Handler: loggingMiddleware(mux, logger)}
+	srv := &http.Server{Addr: host + ":" + port, Handler: loggingMiddleware(mux, logger)} //nolint:all
 	return &Server{
 		srv:  srv,
 		app:  app,
