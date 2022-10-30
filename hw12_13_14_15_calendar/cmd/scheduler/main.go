@@ -103,6 +103,11 @@ func main() {
 				}
 			}
 
+			err = store.ClearOlderThanYear(ctx)
+			if err != nil {
+				logg.Error(fmt.Sprintf("failed to delete old events: %v", err))
+			}
+
 			timer := time.NewTimer(conf.Scheduler.Period - time.Since(start))
 			select {
 			case <-timer.C:
