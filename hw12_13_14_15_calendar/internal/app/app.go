@@ -67,6 +67,7 @@ func (a *App) DisconnectFromStorage(ctx context.Context) error {
 }
 
 func (a *App) SaveEvent(ctx context.Context, event storage.Event) (storage.Event, error) {
+	event.ID = uuid.New()
 	event, err := a.storage.SaveEvent(ctx, event)
 	if err != nil {
 		a.Logg.Error(

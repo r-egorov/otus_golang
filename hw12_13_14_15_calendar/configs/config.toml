@@ -6,9 +6,9 @@ file = "stdout"
 storage_type = "psql"
 user = "postgres"
 password = "postgres"
-db = "calendar"
-host = "localhost"
-port = "5432"
+db = "calendar_test"
+host = "172.24.224.1"
+port = "5433"
 
 [http]
 host = "127.0.0.1"
@@ -24,3 +24,4 @@ queue = "calendar"
 
 [scheduler]
 notify_before = "10m"
+period = "1h"
