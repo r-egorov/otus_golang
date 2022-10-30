@@ -1,6 +1,8 @@
 BINDIR := "./bin"
 BIN := "$(BINDIR)/calendar"
 MIGRATOR := "$(BINDIR)/migrator"
+SCHEDULER := "$(BINDIR)/scheduler"
+SENDER := "$(BINDIR)/sender"
 DOCKER_IMG="calendar:develop"
 
 GIT_HASH := $(shell git log --format="%h" -n 1)
@@ -9,10 +11,16 @@ LDFLAGS := -X main.release="develop" -X main.buildDate=$(shell date -u +%Y-%m-%d
 $(BIN):
 	go build -v -o $(BIN) -ldflags "$(LDFLAGS)" ./cmd/calendar
 
+$(SCHEDULER):
+	go build -v -o $(SCHEDULER) -ldflags "$(LDFLAGS)" ./cmd/scheduler
+
+$(SENDER):
+	go build -v -o $(SENDER) -ldflags "$(LDFLAGS)" ./cmd/sender
+
 $(MIGRATOR):
 	go build -v -o $(MIGRATOR) -ldflags "$(LDFLAGS)" ./cmd/migrator
 
-build: $(BIN) $(MIGRATOR)
+build: $(BIN) $(SCHEDULER) $(SENDER) $(MIGRATOR)
 
 run: build
 	$(BIN) -config ./configs/config.toml
@@ -42,7 +50,7 @@ migrate: $(MIGRATOR)
 	$(MIGRATOR) -config ./configs/config.toml -dir=./migrations up
 
 clean:
-	rm -f $(BINDIR)
+	rm -rf $(BINDIR)
 
 generate:
 	protoc --go_out=./internal/server/ --go-grpc_out=./internal/server/ ./internal/server/grpc/proto/EventService.proto
