@@ -5,14 +5,15 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/config"
-	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/logger"
-	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/storage"
-	amqp "github.com/rabbitmq/amqp091-go"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/config"
+	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/logger"
+	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/rmq"
+	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/storage"
 )
 
 var configFilePath string
@@ -43,52 +44,23 @@ func main() {
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 	defer cancel()
 
-	conn, err := amqp.Dial(conf.AMQP.URI)
+	rabbit := rmq.New(conf.AMQP.URI, conf.AMQP.Queue)
+	err = rabbit.Connect()
 	if err != nil {
 		logg.Fatal("failed to connect to RabbitMQ")
 	}
 	defer func() {
-		err := conn.Close()
+		err := rabbit.Close()
 		if err != nil {
-			logg.Error(fmt.Sprintf("can't close RabbitMQ conn: %v", err))
+			logg.Fatal("failed to close connection RabbitMQ")
 		}
 	}()
 
-	amqpCh, err := conn.Channel()
-	if err != nil {
-		logg.Fatal("failed to open RabbitMQ channel")
-	}
-	defer func() {
-		err := amqpCh.Close()
-		if err != nil {
-			logg.Error(fmt.Sprintf("can't close RabbitMQ chan: %v", err))
-		}
-	}()
-
-	queue, err := amqpCh.QueueDeclare(
-		conf.AMQP.Queue,
-		false,
-		false,
-		false,
-		false,
-		nil,
-	)
-	if err != nil {
-		logg.Fatal("failed to declare queue")
-	}
-
-	msgs, err := amqpCh.Consume(
-		queue.Name,
-		"",
-		true,
-		false,
-		false,
-		false,
-		nil,
-	)
+	msgs, err := rabbit.Consume()
 	if err != nil {
 		logg.Fatal("failed to consume amqp")
 	}
+
 	go func(ctx context.Context) {
 		for {
 			select {

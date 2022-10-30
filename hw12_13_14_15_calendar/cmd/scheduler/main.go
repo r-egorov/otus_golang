@@ -13,8 +13,8 @@ import (
 
 	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/config"
 	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/logger"
+	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/rmq"
 	sqlstorage "github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/storage/sql"
-	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 var configFilePath string
@@ -45,39 +45,17 @@ func main() {
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 	defer cancel()
 
-	conn, err := amqp.Dial(conf.AMQP.URI)
+	rabbit := rmq.New(conf.AMQP.URI, conf.AMQP.Queue)
+	err = rabbit.Connect()
 	if err != nil {
 		logg.Fatal("failed to connect to RabbitMQ")
 	}
 	defer func() {
-		err := conn.Close()
+		err := rabbit.Close()
 		if err != nil {
-			logg.Error(fmt.Sprintf("can't close RabbitMQ conn: %v", err))
+			logg.Fatal("failed to close connection RabbitMQ")
 		}
 	}()
-
-	amqpCh, err := conn.Channel()
-	if err != nil {
-		logg.Fatal("failed to open RabbitMQ channel")
-	}
-	defer func() {
-		err := amqpCh.Close()
-		if err != nil {
-			logg.Error(fmt.Sprintf("can't close RabbitMQ chan: %v", err))
-		}
-	}()
-
-	queue, err := amqpCh.QueueDeclare(
-		conf.AMQP.Queue,
-		false,
-		false,
-		false,
-		false,
-		nil,
-	)
-	if err != nil {
-		logg.Fatal("failed to declare queue")
-	}
 
 	store := sqlstorage.New(
 		conf.Storage.User,
@@ -117,17 +95,7 @@ func main() {
 				ctxTimeout, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 				defer cancel()
 
-				err = amqpCh.PublishWithContext(
-					ctxTimeout,
-					"",
-					queue.Name,
-					false,
-					false,
-					amqp.Publishing{
-						ContentType: "application/json",
-						Body:        jsoned,
-					},
-				)
+				err = rabbit.Publish(ctxTimeout, jsoned)
 				if err != nil {
 					logg.Error(fmt.Sprintf("failed to publish: %s", notification))
 				} else {
