@@ -134,7 +134,7 @@ func getLogWriter(c config.Config) (out *os.File, outClose func() error) {
 	default:
 		out, err = os.OpenFile(c.Logger.OutPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o666)
 		if err != nil {
-			log.Fatalf("fatal: log file %s, err: %w", c.Logger.OutPath, err)
+			log.Fatalf("fatal: log file %s, err: %v", c.Logger.OutPath, err)
 		}
 	}
 	outClose = func() error { return out.Close() }
