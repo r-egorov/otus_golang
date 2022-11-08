@@ -2,7 +2,7 @@ version: "3"
 
 services:
   postgres:
-    container_name: calendar_postgres
+    container_name: postgres
     image: postgres
     restart: always
     environment:
@@ -13,6 +13,13 @@ services:
       - "5432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
+
+  rabbit:
+    container_name: rabbit
+    image: rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"
 
   migrator:
     container_name: migrator
@@ -35,11 +42,38 @@ services:
     restart: always
     ports:
       - "8080:8080"
+      - "9000:9000"
     depends_on:
       - migrator
     volumes:
       - "../configs:/app/configs"
-    command: -config=/app/configs/config.toml
+    command: -config /app/configs/config.toml
+
+  scheduler:
+    container_name: scheduler
+    build:
+      context: ..
+      dockerfile: ./build/scheduler/Dockerfile
+    restart: always
+    command: -config /app/configs/config.toml
+    volumes:
+      - "../configs:/app/configs"
+    depends_on:
+      - migrator
+      - rabbit
+
+  sender:
+    container_name: sender
+    build:
+      context: ..
+      dockerfile: ./build/sender/Dockerfile
+    restart: always
+    command: -config /app/configs/config.toml
+    volumes:
+      - "../configs:/app/configs"
+    depends_on:
+      - migrator
+      - rabbit
 
 volumes:
   db_data:
