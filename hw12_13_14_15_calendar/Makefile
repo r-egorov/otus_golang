@@ -1,29 +1,29 @@
 BINDIR := "./bin"
-BIN := "$(BINDIR)/calendar"
-MIGRATOR := "$(BINDIR)/migrator"
-SCHEDULER := "$(BINDIR)/scheduler"
-SENDER := "$(BINDIR)/sender"
+CALENDAR := "calendar"
+MIGRATOR := "migrator"
+SCHEDULER := "scheduler"
+SENDER := "sender"
 DOCKER_IMG="calendar:develop"
 
 GIT_HASH := $(shell git log --format="%h" -n 1)
 LDFLAGS := -X main.release="develop" -X main.buildDate=$(shell date -u +%Y-%m-%dT%H:%M:%S) -X main.gitHash=$(GIT_HASH)
 
-$(BIN):
-	go build -v -o $(BIN) -ldflags "$(LDFLAGS)" ./cmd/calendar
+$(CALENDAR):
+	go build -v -o $(BINDIR)/$(CALENDAR) -ldflags "$(LDFLAGS)" ./cmd/calendar
 
 $(SCHEDULER):
-	go build -v -o $(SCHEDULER) -ldflags "$(LDFLAGS)" ./cmd/scheduler
+	go build -v -o $(BINDIR)/$(SCHEDULER) -ldflags "$(LDFLAGS)" ./cmd/scheduler
 
 $(SENDER):
-	go build -v -o $(SENDER) -ldflags "$(LDFLAGS)" ./cmd/sender
+	go build -v -o $(BINDIR)/$(SENDER) -ldflags "$(LDFLAGS)" ./cmd/sender
 
 $(MIGRATOR):
-	go build -v -o $(MIGRATOR) -ldflags "$(LDFLAGS)" ./cmd/migrator
+	go build -v -o $(BINDIR)/$(MIGRATOR) -ldflags "$(LDFLAGS)" ./cmd/migrator
 
-build: $(BIN) $(SCHEDULER) $(SENDER) $(MIGRATOR)
+build: $(CALENDAR) $(SCHEDULER) $(SENDER) $(MIGRATOR)
 
 run: build
-	$(BIN) -config ./configs/config.toml
+	$(CALENDAR) -config ./configs/config.toml
 
 build-img:
 	docker build \
@@ -34,8 +34,14 @@ build-img:
 run-img: build-img
 	docker run $(DOCKER_IMG)
 
-version: $(BIN)
-	$(BIN) version
+up:
+	docker-compose -f deployments/docker-compose.yaml up -d
+
+down:
+	docker-compose -f deployments/docker-compose.yaml down
+
+version: $(CALENDAR)
+	$(CALENDAR) version
 
 test:
 	go test -race ./internal/...
@@ -47,7 +53,7 @@ lint: install-lint-deps
 	golangci-lint run ./...
 
 migrate: $(MIGRATOR)
-	$(MIGRATOR) -config ./configs/config.toml -dir=./migrations up
+	$(MIGRATOR) -config=./configs/config.toml -dir=./migrations up
 
 clean:
 	rm -rf $(BINDIR)
@@ -57,4 +63,4 @@ generate:
 
 re: clean build
 
-.PHONY: build run build-img run-img version test lint clean generate re
+.PHONY: build run build-img run-img version test lint clean generate re up down
