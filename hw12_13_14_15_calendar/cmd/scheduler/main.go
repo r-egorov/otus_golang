@@ -17,6 +17,8 @@ import (
 	sqlstorage "github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/storage/sql"
 )
 
+const scanPeriod = 5 * time.Minute
+
 var configFilePath string
 
 func init() {
@@ -79,7 +81,7 @@ func main() {
 				ctx,
 				start,
 				notifyBefore,
-				5*time.Minute,
+				scanPeriod,
 			)
 			fmt.Println(notifications)
 			if err != nil {
@@ -132,7 +134,7 @@ func getLogWriter(c config.Config) (out *os.File, outClose func() error) {
 	default:
 		out, err = os.OpenFile(c.Logger.OutPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o666)
 		if err != nil {
-			panic(fmt.Errorf("fatal: log file %s, err: %w", c.Logger.OutPath, err))
+			log.Fatalf("fatal: log file %s, err: %w", c.Logger.OutPath, err)
 		}
 	}
 	outClose = func() error { return out.Close() }
