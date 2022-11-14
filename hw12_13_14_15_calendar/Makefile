@@ -35,7 +35,7 @@ run-img: build-img
 	docker run $(DOCKER_IMG)
 
 up:
-	docker-compose -f deployments/docker-compose.yaml up -d
+	docker-compose --env-file deployments/.env -f deployments/docker-compose.yaml up -d
 
 down:
 	docker-compose -f deployments/docker-compose.yaml down
@@ -47,7 +47,7 @@ test:
 	go test -race ./internal/...
 
 integration-tests:
-	docker-compose -f deployments/docker-compose.yaml -f deployments/docker-compose.test.yaml up -d
+	docker-compose --env-file deployments/.env.test -f deployments/docker-compose.yaml -f deployments/docker-compose.test.yaml up -d
 	docker logs calendar_tests
 
 install-lint-deps:

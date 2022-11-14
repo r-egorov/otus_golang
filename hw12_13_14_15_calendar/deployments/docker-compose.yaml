@@ -6,9 +6,9 @@ services:
     image: postgres
     restart: always
     environment:
-      POSTGRES_USER: calendar
-      POSTGRES_PASSWORD: calendar
-      POSTGRES_DB: calendar
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - "5432:5432"
     volumes:
@@ -32,7 +32,7 @@ services:
     volumes:
       - "../configs:/app/configs"
       - "../migrations:/app/migrations"
-    command: -config /app/configs/config.toml -dir /app/migrations up
+    command: -config ${CALENDAR_CONFIG} -dir /app/migrations up
 
   calendar:
     container_name: calendar
@@ -47,7 +47,7 @@ services:
       - migrator
     volumes:
       - "../configs:/app/configs"
-    command: -config /app/configs/config.toml
+    command: -config ${CALENDAR_CONFIG}
 
   scheduler:
     container_name: scheduler
@@ -55,7 +55,7 @@ services:
       context: ..
       dockerfile: ./build/scheduler/Dockerfile
     restart: always
-    command: -config /app/configs/config.toml
+    command: -config ${CALENDAR_CONFIG}
     volumes:
       - "../configs:/app/configs"
     depends_on:
@@ -68,7 +68,7 @@ services:
       context: ..
       dockerfile: ./build/sender/Dockerfile
     restart: always
-    command: -config /app/configs/config.toml
+    command: -config ${CALENDAR_CONFIG}
     volumes:
       - "../configs:/app/configs"
     depends_on:
