@@ -4,7 +4,7 @@ Feature: create event
     I need to create events
 
     Scenario: successfully create event
-        When I send a "POST" request to "http://localhost:8080/events" with JSON-body:
+        When I send a "POST" request to "http://calendar:8080/events" with JSON-body:
         """
         {
             "event": {
@@ -31,7 +31,7 @@ Feature: create event
         """
 
     Scenario: time is busy for that user
-            When I send a "POST" request to "http://localhost:8080/events" with JSON-body:
+            When I send a "POST" request to "http://calendar:8080/events" with JSON-body:
             """
             {
                 "event": {
@@ -46,7 +46,7 @@ Feature: create event
             Then the response code is 400
 
     Scenario: successfully create event with same date for different user
-            When I send a "POST" request to "http://localhost:8080/events" with JSON-body:
+            When I send a "POST" request to "http://calendar:8080/events" with JSON-body:
             """
             {
                 "event": {
@@ -73,7 +73,7 @@ Feature: create event
             """
 
     Scenario: successfully create event for the same week
-                When I send a "POST" request to "http://localhost:8080/events" with JSON-body:
+                When I send a "POST" request to "http://calendar:8080/events" with JSON-body:
                 """
                 {
                     "event": {
@@ -100,7 +100,7 @@ Feature: create event
                 """
 
     Scenario: successfully create event for the same month
-                When I send a "POST" request to "http://localhost:8080/events" with JSON-body:
+                When I send a "POST" request to "http://calendar:8080/events" with JSON-body:
                 """
                 {
                     "event": {
@@ -127,7 +127,7 @@ Feature: create event
                 """
 
     Scenario: successfully create event for the same year
-                When I send a "POST" request to "http://localhost:8080/events" with JSON-body:
+                When I send a "POST" request to "http://calendar:8080/events" with JSON-body:
                 """
                 {
                     "event": {
@@ -154,7 +154,7 @@ Feature: create event
                 """
 
     Scenario: successfully create event for the different year
-                When I send a "POST" request to "http://localhost:8080/events" with JSON-body:
+                When I send a "POST" request to "http://calendar:8080/events" with JSON-body:
                 """
                 {
                     "event": {

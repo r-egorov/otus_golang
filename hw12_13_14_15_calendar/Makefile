@@ -46,6 +46,10 @@ version: $(CALENDAR)
 test:
 	go test -race ./internal/...
 
+integration-tests:
+	docker-compose -f deployments/docker-compose.yaml -f deployments/docker-compose.test.yaml up -d
+	docker logs calendar_tests
+
 install-lint-deps:
 	(which golangci-lint > /dev/null) || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.49.0
 
