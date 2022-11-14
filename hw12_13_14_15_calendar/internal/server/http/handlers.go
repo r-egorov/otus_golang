@@ -167,7 +167,7 @@ func getEventsHandler(app server.Application, w http.ResponseWriter, r *http.Req
 	case "month":
 		listFunc = app.ListEventsMonth
 	default:
-		writeError(w, err, http.StatusBadRequest)
+		writeError(w, fmt.Errorf("invalid period"), http.StatusBadRequest)
 		return
 	}
 
