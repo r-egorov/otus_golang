@@ -23,6 +23,7 @@ const (
 	selectEventsInPeriodQuery = `SELECT id, title, datetime, duration, description, owner_id 
 								FROM events 
 								WHERE datetime BETWEEN $1 AND $2`
+	removeOldEventsQuery = `DELETE FROM events WHERE datetime < $1::timestamp - INTERVAL '1 year'`
 )
 
 type Storage struct {
@@ -69,6 +70,7 @@ func (s *Storage) SaveEvent(ctx context.Context, event storage.Event) (storage.E
 	defer func() {
 		_ = tx.Rollback()
 	}()
+
 	_, err = s.db.ExecContext(
 		ctx,
 		insertEventQuery,
@@ -181,6 +183,54 @@ func (s *Storage) ListEventsWeek(ctx context.Context, weekStart time.Time) ([]st
 func (s *Storage) ListEventsMonth(ctx context.Context, monthStart time.Time) ([]storage.Event, error) {
 	monthEnd := now.With(monthStart).EndOfMonth()
 	return s.listEventsInPeriod(ctx, monthStart, monthEnd)
+}
+
+func (s *Storage) ListToNotify(
+	ctx context.Context,
+	now time.Time,
+	notifyBefore, scanPeriod time.Duration,
+) ([]storage.Notification, error) {
+	searchPeriodStart := now.Add(notifyBefore).Add(-scanPeriod)
+	searchPeriodEnd := now.Add(notifyBefore).Add(scanPeriod)
+	events, err := s.listEventsInPeriod(ctx, searchPeriodStart, searchPeriodEnd)
+	if err != nil {
+		return nil, err
+	}
+	notifications := make([]storage.Notification, len(events))
+	for i, event := range events {
+		notifications[i] = storage.Notification{
+			EventID:    event.ID,
+			EventTitle: event.Title,
+			DateTime:   event.DateTime,
+			OwnerID:    event.OwnerID,
+		}
+	}
+	return notifications, nil
+}
+
+func (s *Storage) ClearOlderThanYear(ctx context.Context) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = tx.Rollback()
+	}()
+
+	_, err = s.db.ExecContext(
+		ctx,
+		removeOldEventsQuery,
+		time.Now().UTC(),
+	)
+	if err != nil {
+		return err
+	}
+
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *Storage) listEventsInPeriod(ctx context.Context, start time.Time, end time.Time) ([]storage.Event, error) {

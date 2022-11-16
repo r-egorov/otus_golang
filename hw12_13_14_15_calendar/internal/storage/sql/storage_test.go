@@ -15,8 +15,10 @@ import (
 	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/storage"
 )
 
+const pgHost = "172.22.208.1"
+
 func TestSQLStorage_SaveEvent(t *testing.T) {
-	s := New("postgres", "postgres", "calendar_test", "localhost", "5432")
+	s := New("postgres", "postgres", "calendar_test", pgHost, "5433")
 	ctx := context.Background()
 	require.NoError(t, s.Connect(ctx))
 	defer func() {
@@ -27,6 +29,7 @@ func TestSQLStorage_SaveEvent(t *testing.T) {
 		defer truncateTable(t, s.db)
 		event := generateEvent()
 		gotEvent, err := s.SaveEvent(ctx, event)
+		event.ID = gotEvent.ID
 		require.NoError(t, err)
 		require.Equal(t, event, gotEvent)
 
@@ -36,7 +39,7 @@ func TestSQLStorage_SaveEvent(t *testing.T) {
 	t.Run("it returns err if ID is not unique", func(t *testing.T) {
 		defer truncateTable(t, s.db)
 		refEvent := generateEvent()
-		_, err := s.SaveEvent(ctx, refEvent)
+		refEvent, err := s.SaveEvent(ctx, refEvent)
 		require.NoError(t, err)
 
 		sameIDEvent := generateEvent()
@@ -52,7 +55,7 @@ func TestSQLStorage_SaveEvent(t *testing.T) {
 	t.Run("it returns err if date is busy", func(t *testing.T) {
 		defer truncateTable(t, s.db)
 		refEvent := generateEvent()
-		_, err := s.SaveEvent(ctx, refEvent)
+		refEvent, err := s.SaveEvent(ctx, refEvent)
 		require.NoError(t, err)
 
 		sameDateEvent := generateEvent()
@@ -67,7 +70,7 @@ func TestSQLStorage_SaveEvent(t *testing.T) {
 }
 
 func TestStorage_UpdateEvent(t *testing.T) {
-	s := New("postgres", "postgres", "calendar_test", "localhost", "5432")
+	s := New("postgres", "postgres", "calendar_test", pgHost, "5433")
 	ctx := context.Background()
 	require.NoError(t, s.Connect(ctx))
 	defer func() {
@@ -123,7 +126,7 @@ func TestStorage_UpdateEvent(t *testing.T) {
 }
 
 func TestStorage_DeleteEvent(t *testing.T) {
-	s := New("postgres", "postgres", "calendar_test", "localhost", "5432")
+	s := New("postgres", "postgres", "calendar_test", pgHost, "5433")
 	ctx := context.Background()
 	require.NoError(t, s.Connect(ctx))
 	defer func() {
@@ -155,7 +158,7 @@ func TestStorage_DeleteEvent(t *testing.T) {
 }
 
 func TestStorage_ListEventsDay(t *testing.T) {
-	s := New("postgres", "postgres", "calendar_test", "localhost", "5432")
+	s := New("postgres", "postgres", "calendar_test", pgHost, "5433")
 	ctx := context.Background()
 	require.NoError(t, s.Connect(ctx))
 	defer func() {
@@ -219,7 +222,7 @@ func TestStorage_ListEventsDay(t *testing.T) {
 }
 
 func TestStorage_ListEventsWeek(t *testing.T) {
-	s := New("postgres", "postgres", "calendar_test", "localhost", "5432")
+	s := New("postgres", "postgres", "calendar_test", pgHost, "5433")
 	ctx := context.Background()
 	require.NoError(t, s.Connect(ctx))
 	defer func() {
@@ -283,7 +286,7 @@ func TestStorage_ListEventsWeek(t *testing.T) {
 }
 
 func TestStorage_ListEventsMonth(t *testing.T) {
-	s := New("postgres", "postgres", "calendar_test", "localhost", "5432")
+	s := New("postgres", "postgres", "calendar_test", pgHost, "5433")
 	ctx := context.Background()
 	require.NoError(t, s.Connect(ctx))
 	defer func() {
@@ -343,6 +346,86 @@ func TestStorage_ListEventsMonth(t *testing.T) {
 		got, err := s.ListEventsDay(ctx, date)
 		require.NoError(t, err)
 		require.Equal(t, []storage.Event{}, got)
+	})
+}
+
+func TestStorage_ListEventsToNotify(t *testing.T) {
+	s := New("postgres", "postgres", "calendar_test", pgHost, "5433")
+	ctx := context.Background()
+	require.NoError(t, s.Connect(ctx))
+	defer func() {
+		require.NoError(t, s.Close(ctx))
+	}()
+
+	t.Run("it returns list of events in a month", func(t *testing.T) {
+		defer truncateTable(t, s.db)
+
+		datesMap := make(map[string]time.Time)
+		datesMap["now"] = time.Date(2022, time.Month(1), 10, 12, 30, 0, 0, time.UTC)
+		datesMap["inFiveMinutes"] = time.Date(2022, time.Month(1), 10, 12, 35, 0, 0, time.UTC)
+		datesMap["inTenMinutes"] = time.Date(2022, time.Month(1), 10, 12, 40, 0, 0, time.UTC)
+		datesMap["inFifteenMinutes"] = time.Date(2022, time.Month(1), 10, 12, 45, 0, 0, time.UTC)
+		datesMap["inHour"] = time.Date(2022, time.Month(1), 10, 13, 30, 0, 0, time.UTC)
+
+		events := []storage.Event{}
+		for k, v := range datesMap {
+			event := generateEvent()
+			event.Title = k
+			event.DateTime = v
+			savedEvent, err := s.SaveEvent(ctx, event)
+			require.NoError(t, err)
+			events = append(events, savedEvent)
+		}
+
+		notifications, err := s.ListToNotify(ctx, datesMap["now"], 10*time.Minute, 5*time.Minute)
+		require.NoError(t, err)
+		require.Equal(t, 3, len(notifications))
+
+		expected := make(map[string]struct{})
+		expected["inFiveMinutes"] = struct{}{}
+		expected["inTenMinutes"] = struct{}{}
+		expected["inFifteenMinutes"] = struct{}{}
+
+		got := make(map[string]struct{})
+		for _, n := range notifications {
+			got[n.EventTitle] = struct{}{}
+		}
+
+		require.Equal(t, expected, got)
+	})
+}
+
+func TestStorage_ClearOlderThanYear(t *testing.T) {
+	s := New("postgres", "postgres", "calendar_test", pgHost, "5433")
+	ctx := context.Background()
+	require.NoError(t, s.Connect(ctx))
+	defer func() {
+		require.NoError(t, s.Close(ctx))
+	}()
+
+	t.Run("basic", func(t *testing.T) {
+		defer truncateTable(t, s.db)
+		oldDate := time.Date(2020, 1, 1, 13, 30, 0, 0, time.UTC)
+		eventInDB := generateEvent()
+		eventInDB.DateTime = oldDate
+		_, err := s.SaveEvent(ctx, eventInDB)
+		require.NoError(t, err)
+
+		freshEvent := generateEvent()
+		freshEvent.DateTime = time.Now().UTC()
+		_, err = s.SaveEvent(ctx, freshEvent)
+		require.NoError(t, err)
+
+		err = s.ClearOlderThanYear(ctx)
+		require.NoError(t, err)
+
+		_, err = selectEvent(s.db, eventInDB.ID)
+		require.Error(t, err)
+		var errIDNotFound *storage.ErrIDNotFound
+		require.ErrorAs(t, err, &errIDNotFound)
+
+		_, err = selectEvent(s.db, freshEvent.ID)
+		require.NoError(t, err)
 	})
 }
 
@@ -410,6 +493,32 @@ func assertEventListsEqual(t *testing.T, l, r []storage.Event) {
 		res := make(map[uuid.UUID]storage.Event)
 		for _, event := range sl {
 			res[event.ID] = event
+		}
+		return res
+	}
+
+	lmap := mapFromSlice(l)
+	rmap := mapFromSlice(r)
+
+	require.Equal(t, len(lmap), len(rmap))
+	for k, lv := range lmap {
+		rv := rmap[k]
+		require.Equal(t, lv.ID, rv.ID)
+		require.Equal(t, lv.Title, rv.Title)
+		require.Equal(t, lv.Duration, rv.Duration)
+		require.True(t, lv.DateTime.Equal(rv.DateTime))
+		require.Equal(t, lv.Description, rv.Description)
+		require.Equal(t, lv.OwnerID, rv.OwnerID)
+	}
+}
+
+func assertNotificationListsEqual(t *testing.T, l, r []storage.Notification) {
+	t.Helper()
+
+	mapFromSlice := func(sl []storage.Notification) map[uuid.UUID]storage.Notification {
+		res := make(map[uuid.UUID]storage.Notification)
+		for _, notification := range sl {
+			res[notification.EventID] = notification
 		}
 		return res
 	}

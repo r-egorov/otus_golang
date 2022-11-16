@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -34,7 +35,7 @@ func TestConfig(t *testing.T) {
 					Host: "0.0.0.0",
 					Port: "1234",
 				},
-				GrpcServer: ServerConf{
+				GRPCServer: ServerConf{
 					Host: "0.0.0.0",
 					Port: "4321",
 				},
@@ -54,7 +55,7 @@ func TestConfig(t *testing.T) {
 					Host: "0.0.0.0",
 					Port: "1234",
 				},
-				GrpcServer: ServerConf{
+				GRPCServer: ServerConf{
 					Host: "0.0.0.0",
 					Port: "4321",
 				},
@@ -77,19 +78,27 @@ func TestConfig(t *testing.T) {
 	t.Run("default", func(t *testing.T) {
 		expected := Config{
 			Logger: LoggerConf{
-				Level:   "INFO",
-				OutPath: "stdout",
+				Level:   DefaultLogLevel,
+				OutPath: DefaultLogOutFile,
 			},
 			Storage: StorageConf{
-				StorageType: "inmemory",
+				StorageType: InmemoryStorageType,
 			},
 			HTTPServer: ServerConf{
-				Host: "localhost",
-				Port: "8000",
+				Host: DefaultHTTPHost,
+				Port: DefaultHTTPPort,
 			},
-			GrpcServer: ServerConf{
-				Host: "localhost",
-				Port: "9000",
+			GRPCServer: ServerConf{
+				Host: DefaultGRPCHost,
+				Port: DefaultGRPCPort,
+			},
+			AMQP: AMQPConf{
+				URI:   DefaultAMQPUri,
+				Queue: DefaultAMQPQueue,
+			},
+			Scheduler: SchedulerConf{
+				NotifyBefore: time.Hour * 1,
+				Period:       time.Minute * 10,
 			},
 		}
 		te := setUpTestEnv(t, ``)
@@ -214,6 +223,14 @@ port = "%s"
 [grpc]
 host = "%s"
 port = "%s"
+
+[amqp]
+uri = "%s"
+queue = "%s"
+
+[scheduler]
+notify_before = "%s"
+period = "%s"
 `,
 		c.Logger.Level,
 		c.Logger.OutPath,
@@ -225,7 +242,11 @@ port = "%s"
 		c.Storage.Port,
 		c.HTTPServer.Host,
 		c.HTTPServer.Port,
-		c.GrpcServer.Host,
-		c.GrpcServer.Port,
+		c.GRPCServer.Host,
+		c.GRPCServer.Port,
+		c.AMQP.URI,
+		c.AMQP.Queue,
+		c.Scheduler.NotifyBefore,
+		c.Scheduler.Period,
 	)
 }

@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/spf13/viper"
 )
@@ -10,7 +11,9 @@ type Config struct {
 	Logger     LoggerConf
 	Storage    StorageConf
 	HTTPServer ServerConf
-	GrpcServer ServerConf
+	GRPCServer ServerConf
+	AMQP       AMQPConf
+	Scheduler  SchedulerConf
 }
 
 type LoggerConf struct {
@@ -25,29 +28,54 @@ type ServerConf struct {
 	Host, Port string
 }
 
+type AMQPConf struct {
+	URI, Queue string
+}
+
+type SchedulerConf struct {
+	NotifyBefore, Period time.Duration
+}
+
 const configType = "toml"
 
 const (
 	DefaultLogLevel     = "INFO"
+	DefaultLogOutFile   = "stdout"
 	InmemoryStorageType = "inmemory"
 	PSQLStorageType     = "psql"
+	DefaultHTTPHost     = "localhost"
+	DefaultHTTPPort     = "8000"
+	DefaultGRPCHost     = "localhost"
+	DefaultGRPCPort     = "9000"
+	DefaultAMQPUri      = "amqp://guest:guest@localhost:5672"
+	DefaultAMQPQueue    = "calendar"
+	DefaultRemindBefore = "1h"
+	DefaultPeriod       = "10m"
 )
 
 func NewConfig(configFilePath string) (Config, error) {
 	viper.SetDefault("logger", map[string]string{
 		"level": DefaultLogLevel,
-		"file":  "stdout",
+		"file":  DefaultLogOutFile,
 	})
 	viper.SetDefault("storage", map[string]string{
 		"storage_type": InmemoryStorageType,
 	})
 	viper.SetDefault("http", map[string]string{
-		"host": "localhost",
-		"port": "8000",
+		"host": DefaultHTTPHost,
+		"port": DefaultHTTPPort,
 	})
 	viper.SetDefault("grpc", map[string]string{
-		"host": "localhost",
-		"port": "9000",
+		"host": DefaultGRPCHost,
+		"port": DefaultGRPCPort,
+	})
+	viper.SetDefault("amqp", map[string]string{
+		"uri":   DefaultAMQPUri,
+		"queue": DefaultAMQPQueue,
+	})
+	viper.SetDefault("scheduler", map[string]string{
+		"notify_before": DefaultRemindBefore,
+		"period":        DefaultPeriod,
 	})
 
 	viper.SetConfigType(configType)
@@ -63,11 +91,18 @@ func NewConfig(configFilePath string) (Config, error) {
 	logger := parseLoggerMap(viper.GetStringMapString("logger"))
 	httpServer := parseServerMap(viper.GetStringMapString("http"))
 	grpcServer := parseServerMap(viper.GetStringMapString("grpc"))
+	amqp := parseAMQPMap(viper.GetStringMapString("amqp"))
+	scheduler, err := parseSchedulerMap(viper.GetStringMapString("scheduler"))
+	if err != nil {
+		return Config{}, err
+	}
 	return Config{
 		Logger:     logger,
 		Storage:    storage,
 		HTTPServer: httpServer,
-		GrpcServer: grpcServer,
+		GRPCServer: grpcServer,
+		AMQP:       amqp,
+		Scheduler:  scheduler,
 	}, nil
 }
 
@@ -124,4 +159,26 @@ func parseServerMap(serverMap map[string]string) ServerConf {
 		Host: serverMap["host"],
 		Port: serverMap["port"],
 	}
+}
+
+func parseAMQPMap(amqpMap map[string]string) AMQPConf {
+	return AMQPConf{
+		URI:   amqpMap["uri"],
+		Queue: amqpMap["queue"],
+	}
+}
+
+func parseSchedulerMap(schedulerMap map[string]string) (SchedulerConf, error) {
+	remindBefore, err := time.ParseDuration(schedulerMap["notify_before"])
+	if err != nil {
+		return SchedulerConf{}, err
+	}
+	period, err := time.ParseDuration(schedulerMap["period"])
+	if err != nil {
+		return SchedulerConf{}, err
+	}
+	return SchedulerConf{
+		NotifyBefore: remindBefore,
+		Period:       period,
+	}, nil
 }

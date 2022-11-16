@@ -2,19 +2,18 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
-	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/app"
 	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/config"
 	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/logger"
-	internalgrpc "github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/server/grpc"
-	internalhttp "github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/server/http"
+	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/rmq"
+	"github.com/r-egorov/otus_golang/hw12_13_14_15_calendar/internal/storage"
 )
 
 var configFilePath string
@@ -25,11 +24,6 @@ func init() {
 
 func main() {
 	flag.Parse()
-
-	if flag.Arg(0) == "version" {
-		printVersion()
-		return
-	}
 
 	conf, err := config.NewConfig(configFilePath)
 	if err != nil {
@@ -50,40 +44,40 @@ func main() {
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 	defer cancel()
 
-	// Configure Application
-	calendar := app.New(logg, conf)
-	if err = calendar.ConnectToStorage(ctx); err != nil {
-		logg.Fatal("can't connect to the storage")
+	rabbit := rmq.New(conf.AMQP.URI, conf.AMQP.Queue)
+	err = rabbit.Connect()
+	if err != nil {
+		logg.Fatal("failed to connect to RabbitMQ")
 	}
 	defer func() {
-		err := calendar.DisconnectFromStorage(ctx)
+		err := rabbit.Close()
 		if err != nil {
-			logg.Fatal("can't disconnect from the storage")
+			logg.Fatal("failed to close connection RabbitMQ")
 		}
 	}()
 
-	// Configure API servers
-	httpserver := internalhttp.NewServer(logg, calendar, conf.HTTPServer.Host, conf.HTTPServer.Port)
-	grpcserver := internalgrpc.NewService(logg, calendar, conf.GRPCServer.Host, conf.GRPCServer.Port)
-
-	// Start API servers
-	httpserver.Start(ctx)
-	if err := grpcserver.Start(ctx); err != nil {
-		logg.Fatal("failed to start grpc server: " + err.Error())
+	msgs, err := rabbit.Consume()
+	if err != nil {
+		logg.Fatal("failed to consume amqp")
 	}
 
-	logg.Info("calendar is running...")
+	go func(ctx context.Context) {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case msg := <-msgs:
+				var notification storage.Notification
+				if err := json.Unmarshal(msg.Body, &notification); err != nil {
+					logg.Error(fmt.Sprintf("failed to unmarshal message: %v", err))
+				}
+				logg.Info(notification.String())
+			}
+		}
+	}(ctx)
 
+	logg.Info("started sender...")
 	<-ctx.Done()
-
-	// Stop API Servers
-	ctxStop, cancel := context.WithTimeout(context.Background(), time.Second*3)
-	defer cancel()
-
-	if err := httpserver.Stop(ctxStop); err != nil {
-		logg.Error("failed to stop http server: " + err.Error())
-	}
-	grpcserver.Stop(ctxStop)
 }
 
 func getLogWriter(c config.Config) (out *os.File, outClose func() error) {
@@ -97,7 +91,7 @@ func getLogWriter(c config.Config) (out *os.File, outClose func() error) {
 	default:
 		out, err = os.OpenFile(c.Logger.OutPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o666)
 		if err != nil {
-			panic(fmt.Errorf("fatal: log file %s, err: %w", c.Logger.OutPath, err))
+			log.Fatalf("fatal: log file %s, err: %v", c.Logger.OutPath, err)
 		}
 	}
 	outClose = func() error { return out.Close() }
