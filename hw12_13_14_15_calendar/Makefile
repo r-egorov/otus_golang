@@ -48,7 +48,6 @@ test:
 
 integration-tests:
 	docker-compose --env-file deployments/.env.test -f deployments/docker-compose.yaml -f deployments/docker-compose.test.yaml up -d
-	@sleep 1
 	docker logs calendar_tests
 
 install-lint-deps:
