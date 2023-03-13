@@ -6,8 +6,8 @@ file = "stdout"
 storage_type = "psql"
 user = "calendar"
 password = "calendar"
-db = "calendar"
-host = "postgres"
+db = "calendar_test"
+host = "postgres_test"
 port = "5432"
 
 [http]

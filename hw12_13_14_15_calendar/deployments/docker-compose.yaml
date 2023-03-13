@@ -1,1 +1,79 @@
 version: "3"
+
+services:
+  postgres:
+    container_name: postgres
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  rabbit:
+    container_name: rabbit
+    image: rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"
+
+  migrator:
+    container_name: migrator
+    build:
+      context: ..
+      dockerfile: ./build/migrator/Dockerfile
+    restart: on-failure
+    depends_on:
+      - postgres
+    volumes:
+      - "../configs:/app/configs"
+      - "../migrations:/app/migrations"
+    command: -config ${CALENDAR_CONFIG} -dir /app/migrations up
+
+  calendar:
+    container_name: calendar
+    build:
+      context: ..
+      dockerfile: ./build/calendar/Dockerfile
+    restart: always
+    ports:
+      - "8080:8080"
+      - "9000:9000"
+    depends_on:
+      - migrator
+    volumes:
+      - "../configs:/app/configs"
+    command: -config ${CALENDAR_CONFIG}
+
+  scheduler:
+    container_name: scheduler
+    build:
+      context: ..
+      dockerfile: ./build/scheduler/Dockerfile
+    restart: always
+    command: -config ${CALENDAR_CONFIG}
+    volumes:
+      - "../configs:/app/configs"
+    depends_on:
+      - migrator
+      - rabbit
+
+  sender:
+    container_name: sender
+    build:
+      context: ..
+      dockerfile: ./build/sender/Dockerfile
+    restart: always
+    command: -config ${CALENDAR_CONFIG}
+    volumes:
+      - "../configs:/app/configs"
+    depends_on:
+      - migrator
+      - rabbit
+
+volumes:
+  db_data:

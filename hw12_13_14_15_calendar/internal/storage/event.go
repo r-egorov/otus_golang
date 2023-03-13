@@ -1,17 +1,22 @@
 package storage
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 )
 
 type Event struct {
-	ID          uuid.UUID
-	Title       string
-	DateTime    time.Time
-	Duration    time.Duration
-	Description string
-	OwnerID     uuid.UUID
-	// NotifyBefore time.Duration
+	ID          uuid.UUID     `json:"id"`
+	Title       string        `json:"title"`
+	DateTime    time.Time     `json:"datetime"`
+	Duration    time.Duration `json:"duration"`
+	Description string        `json:"description"`
+	OwnerID     uuid.UUID     `json:"ownerId"`
+}
+
+func (e *Event) String() string {
+	return fmt.Sprintf("Event<ID: %s, Title: %s>",
+		e.ID.String(), e.Title)
 }

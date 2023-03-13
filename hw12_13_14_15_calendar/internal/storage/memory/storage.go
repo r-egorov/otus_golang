@@ -57,7 +57,7 @@ func (s *Storage) UpdateEvent(ctx context.Context, event storage.Event) (storage
 		roundedEventDatetime := eventInStore.DateTime.Round(time.Minute)
 		isOwner := event.OwnerID == eventInStore.OwnerID
 		dateBusy := roundedEventDatetime == roundedRefDatetime
-		if isOwner && dateBusy {
+		if isOwner && dateBusy && eventInStore.ID != event.ID {
 			return storage.Event{}, storage.NewErrDateBusy(event.OwnerID, event.DateTime)
 		}
 	}
